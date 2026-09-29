@@ -1,0 +1,88 @@
+name: catalogo-magazzino
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: catalogo-magazzino-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-esercitazione_api}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-esercitazione_api}
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  producer:
+    profiles: [prod]
+    build:
+      context: ./producer
+      dockerfile: Dockerfile
+    image: catalogo-magazzino/producer:local
+    container_name: catalogo-magazzino-producer
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DOCKER_COMPOSE_ENABLED: "false"
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-esercitazione_api}
+      DB_USERNAME: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      JAVA_TOOL_OPTIONS: ${PRODUCER_JAVA_OPTS:--XX:MaxRAMPercentage=75.0}
+    ports:
+      - "${PRODUCER_PORT:-8081}:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, curl, --fail, --silent, http://localhost:8081/actuator/health]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
+  consumer:
+    profiles: [prod]
+    build:
+      context: ./consumer
+      dockerfile: Dockerfile
+    image: catalogo-magazzino/consumer:local
+    container_name: catalogo-magazzino-consumer
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      PRODUCT_API_URL: http://producer:8081/api/v1
+      JAVA_TOOL_OPTIONS: ${CONSUMER_JAVA_OPTS:--XX:MaxRAMPercentage=75.0}
+    ports:
+      - "${CONSUMER_PORT:-8082}:8082"
+    depends_on:
+      producer:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, curl, --fail, --silent, http://localhost:8082/actuator/health]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+    name: catalogo-magazzino-postgres-data

@@ -115,7 +115,32 @@ server.port=8081
 spring.datasource.url=jdbc:postgresql://localhost:5432/esercitazione_api
 spring.datasource.username=postgres
 spring.jpa.hibernate.ddl-auto=validate
+spring.docker.compose.file=../compose.yaml
+spring.docker.compose.lifecycle-management=start-and-stop
 ```
+
+In sviluppo il Producer usa il modulo `spring-boot-docker-compose`: avvia il
+servizio PostgreSQL definito nel `compose.yaml` alla radice, attende il relativo
+healthcheck e crea automaticamente la service connection JDBC. Il database può
+anche essere avviato manualmente con `docker compose up -d postgres`.
+
+## Profilo Docker `prod`
+
+Con `docker compose --profile prod up --build` vengono costruite immagini
+multi-stage per entrambe le applicazioni. Il Compose orchestra l'avvio tramite
+healthcheck:
+
+```mermaid
+flowchart LR
+    D[(PostgreSQL)] -->|healthy| P[Producer :8081]
+    P -->|healthy| C[Consumer :8082]
+```
+
+Nel network Compose il Producer usa `postgres:5432`, mentre la Consumer usa
+`http://producer:8081/api/v1`. Solo le porte pubbliche configurate nel Compose
+sono raggiungibili dall'host. Le immagini finali contengono esclusivamente il
+JRE, l'applicazione e `curl` per l'healthcheck, ed eseguono Java come utente non
+privilegiato.
 
 Consumer:
 

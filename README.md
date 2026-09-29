@@ -7,7 +7,7 @@ Progetto didattico basato su due applicazioni Spring Boot indipendenti:
 
 Il progetto parte da un CRUD di prodotti e lo estende in un piccolo sistema di magazzino: categorie, SKU, movimenti di carico e scarico, soglie di riordino, ricerca paginata e una control room live chiamata **Inventory Pulse**.
 
-> **Stato del progetto:** progettazione completata, implementazione non ancora iniziata. I comandi e la struttura riportati sotto descrivono il risultato previsto.
+> **Stato del progetto:** progettazione completata e scheletri Spring Boot creati. I moduli compilano e i test iniziali passano; il dominio applicativo è ancora da implementare.
 
 ## La feature distintiva: Inventory Pulse
 
@@ -61,6 +61,8 @@ La Consumer non possiede repository, entity JPA o credenziali del database. Il P
 - Lombok
 - JUnit 5 e Mockito
 - Testcontainers PostgreSQL, facoltativo
+- Docker Compose per PostgreSQL locale
+- immagini Docker multi-stage e profilo Compose `prod`
 
 ## Funzionalità
 
@@ -130,6 +132,8 @@ Request, response, parametri e codici di errore sono documentati in [docs/04-api
 │   ├── pom.xml
 │   └── src/
 ├── docs/
+├── compose.yaml
+├── .env.example
 ├── Consegna.md
 └── README.md
 ```
@@ -138,17 +142,81 @@ Request, response, parametri e codici di errore sono documentati in [docs/04-api
 
 - JDK 21
 - Maven 3.9 o Maven Wrapper
-- PostgreSQL 16 o versione compatibile
-- database locale chiamato `esercitazione_api`
+- Docker Desktop con Compose, soluzione consigliata;
+- in alternativa PostgreSQL 16 o versione compatibile.
 
-Creazione del database tramite `psql`:
+### PostgreSQL con Docker
+
+Il Producer include `spring-boot-docker-compose`: quando viene avviato dalla
+directory `producer`, Spring Boot legge `../compose.yaml`, crea PostgreSQL e
+attende che l'healthcheck sia positivo.
+
+Per avviare il solo database manualmente:
+
+```powershell
+docker compose up -d postgres
+docker compose ps
+```
+
+I valori predefiniti sono adatti allo sviluppo locale:
+
+| Variabile | Default |
+| --- | --- |
+| `POSTGRES_DB` | `esercitazione_api` |
+| `POSTGRES_USER` | `postgres` |
+| `POSTGRES_PASSWORD` | `postgres` |
+| `POSTGRES_PORT` | `5432` |
+
+Per personalizzarli, copiare `.env.example` in `.env`. Il file `.env` è escluso
+da Git. I dati sono persistiti nel volume Docker
+`catalogo-magazzino-postgres-data`.
+
+Se la porta `5432` è già occupata, impostare `POSTGRES_PORT=5433` nel file
+`.env`: la service connection di Spring userà automaticamente la porta esposta.
+
+Per usare invece un PostgreSQL installato localmente, disabilitare l'integrazione
+Docker con `DOCKER_COMPOSE_ENABLED=false` e creare il database tramite `psql`:
 
 ```sql
 CREATE DATABASE esercitazione_api
 WITH ENCODING 'UTF8';
 ```
 
-Le tabelle saranno create dalle migrazioni Flyway del Producer. Lo schema di riferimento è già disponibile nella documentazione, ma non è ancora presente come migrazione eseguibile perché il codice applicativo non è stato creato.
+### Intero stack Docker — profilo `prod`
+
+Il profilo `prod` costruisce immagini Java 21 separate e avvia i servizi in
+ordine, aspettando l'healthcheck di ogni dipendenza:
+
+```text
+PostgreSQL healthy → Producer healthy → Consumer healthy
+```
+
+Avvio completo:
+
+```powershell
+docker compose --profile prod up --build -d
+docker compose --profile prod ps
+```
+
+La Consumer sarà disponibile su `http://localhost:8082`; le API e il relativo
+healthcheck su `http://localhost:8081` e `/actuator/health`.
+
+Log e arresto:
+
+```powershell
+docker compose --profile prod logs -f
+docker compose --profile prod down
+```
+
+`down` conserva il volume PostgreSQL. Per eliminare deliberatamente anche i dati
+locali usare `docker compose --profile prod down --volumes`.
+
+Nei container viene attivato il profilo Spring `prod`, l'integrazione Docker
+Compose interna al Producer viene disabilitata e la Consumer contatta il
+Producer tramite il nome DNS `producer`. Le immagini usano un utente non root,
+filesystem in sola lettura e una directory `/tmp` temporanea.
+
+Le tabelle saranno create dalle migrazioni Flyway del Producer. Lo schema di riferimento è già disponibile nella documentazione, ma non è ancora presente come migrazione eseguibile perché il dominio non è stato implementato.
 
 ## Configurazione prevista
 
@@ -179,25 +247,31 @@ product-api.read-timeout=5s
 
 Password e configurazioni locali non devono essere versionate.
 
-## Avvio previsto
+## Build e avvio
 
-Quando l'implementazione sarà presente:
-
-1. avviare PostgreSQL;
-2. configurare `DB_PASSWORD` ed eventualmente `DB_USERNAME`;
-3. avviare il Producer;
-4. avviare la Consumer;
-5. aprire la dashboard nel browser.
+Per compilare e testare entrambi i moduli dalla radice, senza un'installazione globale di Maven:
 
 ```powershell
-$env:DB_PASSWORD = "password-locale"
-./mvnw -f producer/pom.xml spring-boot:run
+.\producer\mvnw.cmd -f pom.xml test
+```
+
+Per avviare le applicazioni:
+
+1. verificare che Docker Desktop sia attivo;
+2. avviare il Producer dalla sua directory: PostgreSQL partirà automaticamente;
+3. avviare la Consumer in un secondo terminale;
+4. aprire la dashboard nel browser.
+
+```powershell
+Set-Location producer
+.\mvnw.cmd spring-boot:run
 ```
 
 In un secondo terminale:
 
 ```powershell
-./mvnw -f consumer/pom.xml spring-boot:run
+Set-Location consumer
+.\mvnw.cmd spring-boot:run
 ```
 
 Pagine previste:
@@ -206,7 +280,9 @@ Pagine previste:
 - `http://localhost:8082/control-room`
 - `http://localhost:8082/prodotti`
 
-Questi comandi non sono ancora eseguibili nello stato attuale del repository.
+Arrestando normalmente il Producer, Spring Boot ferma il container senza
+rimuovere il volume. La Consumer può essere avviata indipendentemente, ma
+mostrerà dati soltanto quando le API saranno implementate e disponibili.
 
 ## Documentazione
 
