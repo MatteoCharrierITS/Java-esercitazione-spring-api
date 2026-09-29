@@ -2,7 +2,10 @@
 
 ## Divisione dei compiti
 
-Compilare la propria riga scegliendo una delle aree ancora disponibili.
+Il progetto è suddiviso per dominio, così ogni persona può lavorare in un
+package dedicato limitando i conflitti Git. Chi non ha ancora un incarico deve
+scegliere una delle aree disponibili indicate sotto e sostituire `Da scegliere`
+nella propria riga.
 
 | Persona | Area scelta |
 | --- | --- |
@@ -13,6 +16,37 @@ Compilare la propria riga scegliendo una delle aree ancora disponibili.
 | TOMMI | Da scegliere |
 | ANDREA | Da scegliere |
 | CRISTIAN | Prodotti e catalogo |
+
+### Aree assegnate
+
+- **Autenticazione e utenti — MATTEO:** registrazione, login, ruoli `USER` e
+  `ADMIN`, password hashate, sicurezza degli endpoint e gestione della sessione
+  o dei token.
+- **WebSocket e notifiche — MAIKOL:** configurazione STOMP, ticket temporanei,
+  eventi delle stanze, presenza degli utenti, riconnessione ed email inviata al
+  vincitore dopo la chiusura.
+- **Prodotti e catalogo — CRISTIAN:** categorie, prodotti, CRUD ADMIN, ricerca,
+  paginazione, campo `astabile` e gestione delle quantità disponibili e
+  bloccate.
+
+### Aree ancora disponibili
+
+- **Portafoglio e movimenti:** saldo totale, riservato e disponibile, ledger
+  dei movimenti e controllo dei crediti prima di accettare un'offerta.
+- **Programmazione delle aste:** creazione riservata all'ADMIN, prezzo iniziale,
+  conversione `Europe/Rome` → UTC, apertura della stanza tre minuti prima e
+  blocco atomico dello stock.
+- **Offerte e chiusura:** validazione dei rilanci, incremento di venti secondi,
+  concorrenza, selezione del vincitore e trasferimento di crediti e prodotto.
+- **Consumer e interfaccia:** client REST, pagine Thymeleaf, marketplace, lobby,
+  stanza live, inventario, portafoglio e pannello amministrativo.
+
+### Regole di collaborazione
+
+Ogni responsabile cura anche DTO, validazioni, errori, migrazioni Flyway e test
+della propria area. La logica economica rimane nel Producer: il WebSocket
+trasporta gli eventi senza decidere la validità delle offerte, mentre la
+Consumer non accede mai direttamente al database.
 
 Marketplace didattico nel quale un amministratore programma aste live di
 prodotti disponibili a catalogo e gli utenti partecipano usando crediti
