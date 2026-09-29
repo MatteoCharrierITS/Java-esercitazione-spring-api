@@ -31,6 +31,21 @@
 | `GET` | `/admin/aste/storico` | ADMIN | storico globale e vincitori |
 | `PUT` | `/admin/prodotti/{id}` | ADMIN | modifica prodotto, stock e flag |
 
+## Autenticazione
+
+`POST /api/v1/auth/register` accetta `username`, `email` e `password`, crea un
+utente con ruolo `USER` e un portafoglio iniziale a zero. Restituisce `201` con
+`id`, `username`, `email` e `ruolo`; username o email già in uso restituiscono
+`409`.
+
+`POST /api/v1/auth/login` accetta `username` e `password`. Restituisce un
+`accessToken` JWT, `tokenType: "Bearer"`, `expiresAt`, `userId`, `username` e
+`ruolo`. Credenziali errate o un account disattivato restituiscono `401`.
+La Consumer conserva il token nella propria sessione server-side e lo invia al
+Producer con `Authorization: Bearer <accessToken>`. Il token dura 30 minuti;
+il Producer verifica a ogni richiesta che l'utente esista ancora, sia attivo e
+abbia il ruolo necessario.
+
 ## Catalogo
 
 ```http

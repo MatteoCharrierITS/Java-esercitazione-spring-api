@@ -35,6 +35,7 @@ services:
       DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-liveauction}
       DB_USERNAME: ${POSTGRES_USER:-postgres}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:-}
       JAVA_TOOL_OPTIONS: ${PRODUCER_JAVA_OPTS:--XX:MaxRAMPercentage=75.0}
     ports:
       - "${PRODUCER_PORT:-8081}:8081"
