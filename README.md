@@ -130,7 +130,7 @@ Producer usando un ticket monouso e a breve scadenza.
 
 ## Funzionalità previste
 
-- registrazione e login;
+- registrazione, login, rinnovo dei token e logout;
 - catalogo con disponibilità e indicatore `astabile`;
 - acquisto a prezzo fisso;
 - portafoglio virtuale e registro movimenti;
@@ -151,6 +151,9 @@ Base REST: `http://localhost:8081/api/v1`
 | --- | --- | --- |
 | `POST` | `/auth/register` | registra un utente |
 | `POST` | `/auth/login` | apre una sessione applicativa |
+| `POST` | `/auth/refresh` | rinnova i token della sessione |
+| `POST` | `/auth/logout` | revoca la sessione corrente |
+| `DELETE` | `/me` | disattiva e anonimizza il proprio account |
 | `GET` | `/prodotti` | catalogo filtrabile |
 | `POST` | `/prodotti/{id}/acquisti` | acquisto a prezzo fisso |
 | `GET` | `/me/inventario` | prodotti vinti o acquistati |
@@ -179,18 +182,24 @@ Le due tabelle centrali del motore live sono:
 | `aste` | programmazione, prezzo iniziale, timer, stato, vincitore e prezzo finale |
 | `offerte` | storico immutabile dei rilanci accettati |
 
-Sono affiancate da `utenti`, `portafogli`, `movimenti_portafoglio`, `prodotti`,
+Sono affiancate da `utenti`, `auth_sessions`, `portafogli`, `movimenti_portafoglio`, `prodotti`,
 `categorie` e `inventario_utenti`. Schema e DDL sono descritti in
 [docs/03-database.md](docs/03-database.md).
 
-Le migrazioni Flyway del Producer creano lo schema e i dati demo all'avvio su
-PostgreSQL. Gli account `admin_demo`, `alice_demo`, `bruno_demo` e `carla_demo`
-usano la password iniziale `Demo123!`; è destinata soltanto alla demo e va
-cambiata prima di un uso reale. Le due aste demo partono rispettivamente uno e
-due giorni dopo la prima applicazione delle migrazioni.
+Le migrazioni Flyway del Producer creano una tabella per file, senza inserire
+dati iniziali. Per provare il modulo auth, registra un utente tramite
+`POST /auth/register`. Per ottenere un account ADMIN in locale, promuovi un
+utente già registrato nel database con
+`UPDATE utenti SET ruolo = 'ADMIN' WHERE username = 'nome_utente';`.
+Non usare questa procedura come funzione di gestione degli utenti in produzione.
+Se il database locale ha già applicato le vecchie migrazioni V1/V2, usa un
+database nuovo prima di riavviare il Producer: la cronologia Flyway precedente
+non corrisponde più ai file attuali. Conserva una copia degli eventuali dati
+che vuoi mantenere.
 
 La registrazione crea anche un portafoglio a zero. Il login restituisce un
-token Bearer valido 30 minuti. Con il profilo `prod`, impostare
+access token Bearer valido 30 minuti e un refresh token valido 7 giorni.
+Il logout revoca subito entrambi. Con il profilo `prod`, impostare
 `AUTH_JWT_SECRET` in `.env` con una stringa casuale di almeno 32 byte: senza
 questa chiave il Producer non si avvia.
 
@@ -221,6 +230,14 @@ Solo PostgreSQL per lo sviluppo:
 docker compose up -d postgres
 ```
 
+Poi avviare `LiveAuctionProducerApplication` da IntelliJ con il normale pulsante
+Run, selezionando un JDK 21 per il progetto e la run configuration. Il Producer
+usa `localhost:5432`, applica le migrazioni Flyway e ascolta su
+`localhost:8081`. L'avvio automatico di Docker Compose da Spring Boot è
+disabilitato, così funziona anche se IntelliJ usa la radice del repository come
+directory di lavoro. In Postman selezionare l'ambiente **LiveAuction • Locale**
+prima di inviare le richieste.
+
 Intero stack con profilo `prod`:
 
 ```powershell
@@ -229,7 +246,9 @@ docker compose --profile prod ps
 ```
 
 Se `5432` è occupata, copiare `.env.example` in `.env` e impostare
-`POSTGRES_PORT=5433`. Arresto senza cancellare i dati:
+`POSTGRES_PORT=5433`; in quel caso impostare anche
+`DB_URL=jdbc:postgresql://localhost:5433/liveauction` nella run configuration
+di IntelliJ. Arresto senza cancellare i dati:
 
 ```powershell
 docker compose --profile prod down

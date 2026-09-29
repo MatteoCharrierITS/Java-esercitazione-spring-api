@@ -5,22 +5,28 @@ Importare `local.postman_environment.json` e selezionare l'ambiente
 
 | File | Modulo | Stato |
 | --- | --- | --- |
-| `auth.json` | Registrazione e login | Implementato |
+| `auth.json` | Registrazione, login, refresh, logout ed eliminazione account | Implementato |
 | `prodotti.json` | Catalogo, acquisti, gestione ADMIN | API previste |
 | `inventario.json` | Inventario personale | API prevista |
 | `portafoglio.json` | Saldo e impostazioni | API previste |
 | `aste.json` | Lobby, ticket, programmazione e storici | API previste |
 
 L'ambiente usa `http://localhost:8081/api/v1` come `baseUrl`. Modificarlo se
-il Producer è esposto su un'altra porta. Le credenziali iniziali sono quelle
-degli account demo creati da Flyway; usarle soltanto in locale. I token restano
+il Producer è esposto su un'altra porta. Le migrazioni non creano account demo:
+la richiesta 01 registra un utente USER. I token restano
 nelle variabili dell'ambiente Postman e non sono salvati nei file del progetto.
 
-Eseguire `auth.json` nell'ordine numerato per verificare registrazione,
-validazione, login USER e login ADMIN. I due login demo impostano `userToken` e
-`adminToken`, usati automaticamente dalle altre collection. Se un token scade,
-rieseguire il rispettivo login. Le richieste di registrazione generano un nome
+Eseguire le richieste 01–04 e 07–09 di `auth.json` per verificare registrazione,
+validazione, login, refresh e logout. Le richieste 05 e 06 sono facoltative:
+impostare prima le credenziali di account esistenti nell'ambiente. Per un ADMIN,
+registrare l'utente e assegnargli il ruolo nel database come spiegato nel
+[README principale](../../README.md). I login impostano i token di accesso e
+refresh nell'ambiente. La richiesta 08 rinnova i token USER; la 09 chiude la
+sessione USER e va eseguita per ultima. I token di accesso `userToken` e
+`adminToken` sono usati automaticamente dalle altre collection. Le richieste di registrazione generano un nome
 diverso a ogni esecuzione.
+La richiesta 10 elimina e anonimizza l'account: eseguirla manualmente dopo
+un nuovo login, senza includerla nella normale sequenza di test.
 
 Le altre collection seguono [il contratto REST](../04-api-rest.md). Finché i
 relativi controller non saranno sviluppati, una risposta `404` è attesa. I body

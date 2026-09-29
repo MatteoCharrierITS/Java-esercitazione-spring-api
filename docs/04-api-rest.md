@@ -15,7 +15,10 @@
 | Metodo | Endpoint | Accesso | Scopo |
 | --- | --- | --- | --- |
 | `POST` | `/auth/register` | pubblico | registra utente e wallet |
-| `POST` | `/auth/login` | pubblico | restituisce access token |
+| `POST` | `/auth/login` | pubblico | apre una sessione e restituisce i token |
+| `POST` | `/auth/refresh` | pubblico | rinnova i token usando il refresh token |
+| `POST` | `/auth/logout` | Bearer | revoca la sessione corrente |
+| `DELETE` | `/me` | Bearer | disattiva e anonimizza il proprio account |
 | `GET` | `/prodotti` | pubblico | catalogo paginato |
 | `GET` | `/prodotti/{id}` | pubblico | dettaglio, stock e `astabile` |
 | `POST` | `/prodotti/{id}/acquisti` | USER | acquisto fisso |
@@ -39,12 +42,30 @@ utente con ruolo `USER` e un portafoglio iniziale a zero. Restituisce `201` con
 `409`.
 
 `POST /api/v1/auth/login` accetta `username` e `password`. Restituisce un
-`accessToken` JWT, `tokenType: "Bearer"`, `expiresAt`, `userId`, `username` e
-`ruolo`. Credenziali errate o un account disattivato restituiscono `401`.
-La Consumer conserva il token nella propria sessione server-side e lo invia al
-Producer con `Authorization: Bearer <accessToken>`. Il token dura 30 minuti;
-il Producer verifica a ogni richiesta che l'utente esista ancora, sia attivo e
-abbia il ruolo necessario.
+`accessToken` JWT, `tokenType: "Bearer"`, `expiresAt`, `refreshToken`,
+`refreshExpiresAt`, `userId`, `username` e `ruolo`. Credenziali errate o un
+account disattivato restituiscono `401`. La Consumer conserva entrambi i token
+nella propria sessione server-side e invia l'access token al Producer con
+`Authorization: Bearer <accessToken>`. L'access token dura 30 minuti e il
+refresh token 7 giorni. Il Producer verifica a ogni richiesta che la sessione
+sia valida e che l'utente esista, sia attivo e abbia il ruolo necessario.
+
+`POST /api/v1/auth/refresh` accetta `{ "refreshToken": "..." }` senza header
+Bearer e restituisce lo stesso formato del login. Ogni rinnovo sostituisce il
+refresh token precedente; quello vecchio restituisce `401`. La scadenza della
+sessione resta quella fissata al login. `POST /api/v1/auth/logout` richiede
+`Authorization: Bearer <accessToken>` e restituisce `204` senza body. Revoca la
+sessione corrente: tutti gli access token e il refresh token di quella sessione
+diventano inutilizzabili. La Consumer deve eliminare entrambi i token dalla
+propria sessione dopo il logout.
+
+`DELETE /api/v1/me` richiede `Authorization: Bearer <accessToken>` e
+restituisce `204` senza body. Disattiva l'account (`attivo = false`), sostituisce
+username, email e hash della password con valori anonimi e revoca tutte le
+sessioni dell'utente. Gli ID e le relazioni storiche restano nel database.
+Login, refresh e access token già emessi non funzionano più. Dopo la risposta,
+la Consumer elimina i token dalla propria sessione. Username ed email originali
+possono essere registrati nuovamente.
 
 ## Catalogo
 

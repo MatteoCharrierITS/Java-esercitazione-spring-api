@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -30,6 +31,7 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.UUID;
 
 @Configuration
 public class SecurityConfig {
@@ -42,8 +44,9 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/login", "/api/v1/auth/refresh").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/prodotti/**", "/api/v1/aste/**").permitAll()
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/me").authenticated()
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/me/**").hasRole("USER")
                         .requestMatchers(HttpMethod.POST, "/api/v1/aste/*/ticket").hasRole("USER")
@@ -84,13 +87,22 @@ public class SecurityConfig {
     }
 
     @Bean
-    Converter<Jwt, AbstractAuthenticationToken> jwtAuthenticationConverter(UtenteRepository utenti) {
+    Converter<Jwt, AbstractAuthenticationToken> jwtAuthenticationConverter(UtenteRepository utenti, JdbcTemplate jdbc) {
         return jwt -> {
             long id;
+            UUID sessionId;
             try {
                 id = Long.parseLong(jwt.getSubject());
-            } catch (NumberFormatException exception) {
+                sessionId = UUID.fromString(jwt.getClaimAsString("sid"));
+            } catch (IllegalArgumentException | NullPointerException exception) {
                 throw new BadCredentialsException("Token non valido");
+            }
+            Integer activeSessions = jdbc.queryForObject("""
+                    SELECT COUNT(*) FROM auth_sessions
+                    WHERE id = ? AND utente_id = ? AND revoked_at IS NULL AND expires_at > CURRENT_TIMESTAMP
+                    """, Integer.class, sessionId, id);
+            if (activeSessions == null || activeSessions == 0) {
+                throw new BadCredentialsException("Sessione non valida");
             }
             Utente utente = utenti.findById(id)
                     .filter(Utente::isAttivo)
