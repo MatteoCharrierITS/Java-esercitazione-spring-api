@@ -1,185 +1,120 @@
-# Architettura e componenti
+# Architettura e comunicazione
 
 ## Vista generale
 
 ```mermaid
 flowchart LR
-    B[Browser] -->|HTML| C[product-client :8082]
-    C -->|HTTP / JSON| P[product-api :8081]
-    P -.->|SSE: eventi scorte| C
-    P -->|JPA| D[(PostgreSQL<br/>esercitazione_api)]
+    B[Browser] -->|HTML/form| C[Consumer :8082]
+    C -->|REST + access token| P[Producer :8081]
+    B -.->|WebSocket + ticket breve| P
+    P -->|JPA| D[(PostgreSQL)]
+    P -.->|dopo il commit| M[Servizio email]
 ```
 
-La Consumer è un server-side web client: riceve richieste dal browser, interroga
-il Producer tramite `RestClient`, prepara il model e rende template Thymeleaf.
-Non contiene repository JPA né credenziali del database.
+La Consumer rende Thymeleaf e mantiene l'access token nella sessione server-side.
+Per entrare in una stanza richiede al Producer un ticket WebSocket monouso,
+valido 30 secondi. Il token principale non viene esposto al JavaScript.
 
 ## Producer
 
-Struttura suggerita per funzionalità, mantenendo chiari i livelli:
-
 ```text
-producer/src/main/java/it/esercitazione/productapi/
-├── ProductApiApplication.java
-├── prodotto/
-│   ├── ProdottoController.java
-│   ├── ProdottoService.java
-│   ├── ProdottoRepository.java
-│   ├── Prodotto.java
-│   └── dto/
-├── categoria/
-│   ├── CategoriaController.java
-│   ├── CategoriaService.java
-│   ├── CategoriaRepository.java
-│   └── Categoria.java
-├── magazzino/
-│   ├── MovimentoController.java
-│   ├── MagazzinoService.java
-│   ├── MovimentoRepository.java
-│   ├── MovimentoMagazzino.java
-│   └── dto/
-├── dashboard/
-│   ├── DashboardController.java
-│   └── DashboardService.java
-├── event/
-│   ├── ScortaEventPublisher.java
-│   └── ScortaEventController.java
-└── common/
-    ├── exception/
-    └── config/
+it.esercitazione.liveauction.producer/
+├── auth/          utenti, login e ticket WebSocket
+├── prodotto/      catalogo, stock e flag astabile
+├── inventario/    prodotti assegnati agli utenti
+├── portafoglio/   saldo, riserve e ledger
+├── asta/          programmazione, offerte e settlement
+├── notifica/      email post-vittoria
+├── websocket/     endpoint STOMP ed eventi stanza
+└── common/        errori, auditing e configurazione
 ```
 
-Responsabilità:
-
-- **Controller**: protocollo HTTP, validazione iniziale e mapping DTO.
-- **Service**: regole di business e confini transazionali.
-- **Repository**: interrogazioni e persistenza.
-- **Entity**: modello persistente, mai restituito direttamente dalle API.
-
-La registrazione di un movimento è il caso più importante da rendere
-transazionale:
-
-```mermaid
-sequenceDiagram
-    participant C as Consumer
-    participant A as MovimentoController
-    participant S as MagazzinoService
-    participant DB as PostgreSQL
-    C->>A: POST /prodotti/{id}/movimenti
-    A->>S: registraMovimento(id, request)
-    S->>DB: legge prodotto e versione
-    S->>S: calcola e valida nuova quantità
-    S->>DB: aggiorna prodotto
-    S->>DB: inserisce movimento
-    DB-->>S: commit atomico
-    S-->>C: 201 movimento + nuova quantità
-```
+Il Producer richiede gli starter Security, WebSocket e Mail oltre a JPA,
+Validation, PostgreSQL e Flyway.
 
 ## Consumer
 
 ```text
-consumer/src/main/java/it/esercitazione/productclient/
-├── ProductClientApplication.java
-├── client/
-│   ├── ProdottoApiClient.java
-│   ├── CategoriaApiClient.java
-│   ├── DashboardApiClient.java
-│   └── ScortaEventClient.java
-├── web/
-│   ├── DashboardWebController.java
-│   ├── ProdottoWebController.java
-│   ├── ScortaEventWebController.java
-│   └── WebExceptionHandler.java
-├── dto/
-└── config/
+it.esercitazione.liveauction.consumer/
+├── auth/          login web e sessione
+├── client/        client REST verso il Producer
+├── web/           controller MVC utente e ADMIN
+├── dto/           modelli del contratto
+└── config/        sicurezza web e client HTTP
 ```
 
-Template previsti:
+Il JavaScript della stanza gestisce presentazione, countdown, riconnessione e
+comandi STOMP. Non decide mai apertura, validità, vincitore o saldo.
 
-```text
-templates/
-├── dashboard.html
-├── control-room.html
-├── prodotti/lista.html
-├── prodotti/dettaglio.html
-└── error/servizio-non-disponibile.html
-```
-
-## Configurazione minima
-
-Producer:
-
-```properties
-spring.application.name=product-api
-server.port=8081
-spring.datasource.url=jdbc:postgresql://localhost:5432/esercitazione_api
-spring.datasource.username=postgres
-spring.jpa.hibernate.ddl-auto=validate
-spring.docker.compose.file=../compose.yaml
-spring.docker.compose.lifecycle-management=start-and-stop
-```
-
-In sviluppo il Producer usa il modulo `spring-boot-docker-compose`: avvia il
-servizio PostgreSQL definito nel `compose.yaml` alla radice, attende il relativo
-healthcheck e crea automaticamente la service connection JDBC. Il database può
-anche essere avviato manualmente con `docker compose up -d postgres`.
-
-## Profilo Docker `prod`
-
-Con `docker compose --profile prod up --build` vengono costruite immagini
-multi-stage per entrambe le applicazioni. Il Compose orchestra l'avvio tramite
-healthcheck:
+## Programmazione e stock
 
 ```mermaid
-flowchart LR
-    D[(PostgreSQL)] -->|healthy| P[Producer :8081]
-    P -->|healthy| C[Consumer :8082]
+sequenceDiagram
+    participant A as ADMIN
+    participant S as AstaService
+    participant DB as PostgreSQL
+    A->>S: programma(prodotto, LocalDateTime, prezzoIniziale)
+    S->>S: Europe/Rome → Instant UTC
+    S->>DB: lock prodotto
+    S->>S: verifica astabile e quantità disponibile
+    S->>DB: disponibile -1, bloccata +1, salva asta
+    DB-->>A: commit + asta PROGRAMMATA
 ```
 
-Nel network Compose il Producer usa `postgres:5432`, mentre la Consumer usa
-`http://producer:8081/api/v1`. Solo le porte pubbliche configurate nel Compose
-sono raggiungibili dall'host. Le immagini finali contengono esclusivamente il
-JRE, l'applicazione e `curl` per l'healthcheck, ed eseguono Java come utente non
-privilegiato.
+## Attivazione temporale
 
-Consumer:
+Un job pianificato verifica periodicamente gli istanti UTC:
 
-```properties
-spring.application.name=product-client
-server.port=8082
-product-api.base-url=http://localhost:8081/api/v1
-product-api.connect-timeout=2s
-product-api.read-timeout=5s
-```
+1. a `startsAt - 3 minuti` porta l'asta in `STANZA_APERTA`;
+2. a `startsAt` la porta in `APERTA` e fissa `endsAt = startsAt + 7 minuti`;
+3. a `endsAt` la chiude, salvo estensioni di venti secondi già registrate.
 
-Le chiamate normali usano `RestClient`. Il solo flusso SSE può usare `WebClient`,
-perché deve mantenere una risposta aperta. La Consumer espone al browser un
-endpoint SSE sul proprio dominio e inoltra gli eventi ricevuti dal Producer:
+Snapshot e richieste eseguono anche una verifica pigra dello stato, così il
+sistema recupera correttamente dopo un riavvio.
+
+## Flusso offerta
 
 ```mermaid
 sequenceDiagram
     participant B as Browser
-    participant C as Consumer :8082
-    participant P as Producer :8081
-    B->>C: GET /eventi/scorte
-    C->>P: GET /api/v1/events/scorte
-    P-->>C: event: scorta-aggiornata
-    C-->>B: event: scorta-aggiornata
-    B->>C: GET /fragments/control-room
-    C->>P: GET /api/v1/dashboard/control-room
-    C-->>B: frammento HTML aggiornato
+    participant W as WebSocket Producer
+    participant S as AstaService
+    participant DB as PostgreSQL
+    B->>W: PLACE_BID(clientBidId, importo)
+    W->>S: piazzaOfferta(utente, asta, comando)
+    S->>DB: lock asta + portafogli
+    S->>S: valida stato, tempo, importo e saldo
+    S->>DB: riserva/libera fondi, salva offerta, endsAt +20s
+    DB-->>S: commit
+    S-->>W: evento dopo commit
+    W-->>B: BID_ACCEPTED + TIMER_EXTENDED
 ```
 
-SSE trasporta una notifica leggera, non l'intero stato della pagina. Alla
-ricezione dell'evento, il browser richiede alla Consumer i dati aggiornati. Se
-lo stream cade, `EventSource` tenta la riconnessione e la pagina usa un polling
-di sicurezza ogni 15 secondi.
+## Chiusura
 
-## Vincoli architetturali
+La chiusura usa lock su asta, prodotto, inventario e portafogli e verifica di
+nuovo stato e `endsAt`. Il trasferimento è idempotente. Dopo il commit vengono
+pubblicati `AUCTION_CLOSED` e la richiesta di email; un problema email non
+esegue rollback della vittoria.
 
-- Nessuna dipendenza diretta tra i due moduli Java.
-- I DTO possono avere la stessa forma, ma non devono essere condivisi tramite un
-  modulo comune: il contratto HTTP resta il punto di integrazione.
-- La Consumer non deve dipendere da JPA o dal driver PostgreSQL.
-- Le credenziali PostgreSQL arrivano da variabili d'ambiente o configurazione locale
-  esclusa dal versionamento.
+## WebSocket e resilienza
+
+- Protocollo STOMP su endpoint `/ws`.
+- Join rifiutato prima dell'apertura della stanza.
+- Nel pre-live sono permessi join e presenza, non le offerte.
+- Topic pubblico per asta e coda privata per rifiuti e conferme sensibili.
+- Heartbeat client/server ogni 10 secondi.
+- Nessun tick al secondo dal server: il browser interpola il timer.
+- Snapshot REST al primo ingresso, alla riconnessione e in caso di gap di
+  `sequence`.
+
+## Docker
+
+Il profilo Compose `prod` mantiene l'ordine:
+
+```text
+PostgreSQL healthy → Producer healthy → Consumer healthy
+```
+
+Nel network Docker gli URL sono `postgres:5432` e `producer:8081`; dall'host le
+porte rimangono 5432, 8081 e 8082, configurabili da `.env`.

@@ -1,98 +1,137 @@
-# Requisiti e perimetro
+# Requisiti e regole di dominio
 
-## Scenario
+## Attori
 
-Un piccolo negozio vuole consultare il proprio catalogo e tenere sotto controllo
-le scorte. Il sistema è diviso in un servizio REST che possiede i dati e in una
-applicazione web che li visualizza. Solo il Producer può accedere al database.
+- **Visitatore**: consulta catalogo e aste pubbliche.
+- **Utente**: entra nelle stanze, offre crediti e consulta inventario e vittorie.
+- **ADMIN**: gestisce catalogo, stock, abilitazione `astabile`, programmazione e
+  storico globale delle aste.
 
-## Requisiti funzionali
+Soltanto l'ADMIN può creare, modificare o annullare un'asta. Non esiste il
+flusso nel quale un utente mette in vendita un proprio prodotto.
 
-### Catalogo
+## Prodotti e stock
 
-- Creare, consultare, modificare e disattivare un prodotto.
-- Associare ogni prodotto a una categoria esistente.
-- Identificare il prodotto con uno **SKU univoco**, oltre all'id tecnico.
-- Cercare per nome o SKU, senza distinzione tra maiuscole e minuscole.
-- Filtrare per categoria, stato attivo e stato di scorta.
-- Ordinare e paginare i risultati.
-- Consultare l'elenco delle categorie attive.
+Ogni prodotto contiene i campi:
 
-### Magazzino
+- `astabile`: autorizza o vieta l'uso del prodotto nelle aste;
+- `quantita_disponibile`: unità libere per acquisti o nuove aste;
+- `quantita_bloccata`: unità riservate da aste non ancora concluse.
 
-- Registrare un carico, uno scarico o una rettifica di inventario.
-- Aggiornare quantità e storico in un'unica transazione.
-- Impedire che uno scarico porti la quantità sotto zero.
-- Considerare “sotto scorta” un prodotto la cui quantità è minore o uguale alla
-  sua `sogliaScorta`.
-- Consultare gli ultimi movimenti di un prodotto.
+Quando l'ADMIN programma un'asta, il Producer blocca una unità con un'unica
+transazione:
 
-### Dashboard
+```text
+quantita_disponibile -= 1
+quantita_bloccata += 1
+```
 
-La Consumer deve mostrare:
+L'operazione è rifiutata se `astabile = false` o se
+`quantita_disponibile = 0`. Tre copie disponibili permettono al massimo tre aste
+contemporaneamente programmate; una sola copia ne permette una sola.
 
-- numero di prodotti attivi;
-- numero di prodotti sotto scorta;
-- quantità totale disponibile;
-- valore totale del magazzino, calcolato come somma di `prezzo * quantita`;
-- elenco sintetico dei prodotti da riordinare.
+Una vittoria sposta l'unità bloccata nell'inventario del vincitore. Se l'asta
+termina senza offerte oppure viene annullata prima di riceverne, l'unità torna
+disponibile.
 
-### Inventory Pulse — control room live
+## Portafoglio
 
-- Calcolare un indice di salute del magazzino da 0 a 100.
-- Assegnare a ogni prodotto una priorità `CRITICA`, `ALTA`, `MEDIA` oppure `OK`.
-- Mostrare gli ultimi movimenti in un feed che si aggiorna senza ricaricare la
-  pagina.
-- Aggiornare KPI e radar delle categorie quando viene registrato un movimento.
-- Segnalare chiaramente quando il collegamento live è interrotto e continuare a
-  funzionare tramite aggiornamento periodico.
+- Valuta virtuale: `CRD` (crediti), visualizzata come `1.250,00 CRD`.
+- Ogni utente dispone di saldo totale, riservato e disponibile.
+- `saldoDisponibile = saldoTotale - saldoRiservato`.
+- Ogni modifica produce un movimento di ledger.
+- Nessun saldo può essere negativo.
+- Un'offerta superiore al saldo disponibile viene rifiutata senza effetti.
 
-### Interfaccia web
+## Programmazione
 
-- Elenco prodotti con ricerca, filtri, ordinamento e paginazione.
-- Dettaglio prodotto con stato scorte e ultimi movimenti.
-- Dashboard riepilogativa.
-- Messaggi comprensibili per errori di validazione, dati mancanti e Producer non
-  raggiungibile.
+Per creare un'asta l'ADMIN deve indicare:
 
-## Regole di business
+- prodotto;
+- data e ora locale di inizio;
+- prezzo iniziale positivo.
 
-1. `sku` è obbligatorio, univoco e scritto in maiuscolo; formato consigliato:
-   `[A-Z0-9-]{3,30}`.
-2. `nome` è obbligatorio e lungo al massimo 200 caratteri.
-3. `prezzo` deve essere maggiore di zero e usa `BigDecimal`.
-4. `quantita` e `sogliaScorta` non possono essere negative.
-5. Una categoria disattivata non può essere assegnata a nuovi prodotti.
-6. Il client non modifica direttamente la quantità tramite `PUT`: ogni variazione
-   passa dall'endpoint movimenti per conservare lo storico.
-7. La disattivazione di un prodotto non cancella i movimenti già registrati.
-8. Due aggiornamenti concorrenti dello stesso prodotto non devono sovrascriversi
-   silenziosamente: il secondo riceve un conflitto `409`.
+L'interfaccia usa `LocalDateTime` in `Europe/Rome`. Il Producer valida l'orario,
+lo converte in `Instant` e lo salva in PostgreSQL come `TIMESTAMPTZ` UTC. Il
+tempo del server rimane sempre autorevole.
+
+## Ciclo di vita dell'asta
+
+```text
+PROGRAMMATA → STANZA_APERTA → APERTA → CHIUSA
+      └──────────────┴──────────┴────→ ANNULLATA
+```
+
+- `PROGRAMMATA`: stanza non ancora accessibile.
+- `STANZA_APERTA`: da tre minuti prima dell'inizio; join consentito, offerte
+  vietate.
+- `APERTA`: dall'orario programmato; offerte consentite per sette minuti
+  iniziali.
+- `CHIUSA`: asta terminata, con o senza vincitore.
+- `ANNULLATA`: asta cancellata dall'ADMIN quando le regole lo consentono.
+
+Alla transizione in `APERTA`:
+
+```text
+endsAt = startsAt + 7 minuti
+```
+
+Ogni offerta accettata esegue:
+
+```text
+endsAt = endsAt + 20 secondi
+```
+
+L'estensione si somma sempre alla scadenza corrente, non a venti secondi dal
+momento del rilancio.
+
+## Regole di offerta
+
+1. L'asta deve essere `APERTA` e non scaduta secondo il tempo del server.
+2. L'offerente deve essere autenticato, attivo e avere ruolo `USER`.
+3. La prima offerta deve essere almeno pari al prezzo iniziale.
+4. Le successive devono raggiungere `offertaCorrente + incrementoMinimo`.
+5. Il miglior offerente non può rilanciare su sé stesso.
+6. Il saldo disponibile deve coprire l'importo.
+7. Ogni comando usa un `clientBidId` UUID per l'idempotenza.
+8. Asta e portafogli coinvolti vengono bloccati nella transazione.
+9. Nuova riserva e rilascio della precedente avvengono atomicamente.
+10. L'evento live viene pubblicato soltanto dopo il commit.
+
+L'incremento minimo usa il valore applicativo predefinito di `1,00 CRD`; potrà
+essere reso configurabile dall'ADMIN senza modificare il modello dati.
+
+## Chiusura e vincitore
+
+Con almeno una offerta:
+
+- la riserva del vincitore viene consumata dal saldo totale;
+- i crediti sono accreditati al conto amministrativo;
+- l'unità bloccata viene rimossa dallo stock e aggiunta all'inventario del
+  vincitore;
+- vengono creati i movimenti di portafoglio correlati;
+- l'asta salva vincitore, prezzo finale e istante di chiusura;
+- il vincitore viene annunciato nella stanza;
+- la vittoria appare nello storico personale e nello storico globale ADMIN.
+
+Senza offerte, l'unità viene sbloccata. La chiusura è idempotente: eseguirla più
+volte non duplica trasferimenti, addebiti o assegnazioni.
+
+## Email al vincitore
+
+Dopo il commit viene richiesto l'invio di una email contenente almeno prodotto,
+identificativo asta, importo vincente e data di conclusione. L'invio è
+asincrono/best effort: un errore del provider viene registrato e ritentato, ma
+non annulla la vittoria già conclusa.
 
 ## Requisiti non funzionali
 
-- Java 21 e Spring Boot 3.
-- Risposte JSON in UTF-8 e date ISO 8601.
-- Validazione con Jakarta Bean Validation.
-- Errori in formato coerente `application/problem+json`.
-- Query di elenco paginata; dimensione predefinita 10, massima 100.
-- URL del Producer configurabile nella Consumer.
-- Migrazioni del database versionate; consigliato Flyway. `ddl-auto=validate` nei
-  profili non di test.
-- Log senza password, stack trace o dati sensibili nelle risposte HTTP.
-
-## Funzionalità obbligatorie e bonus
-
-### Obbligatorie
-
-- CRUD logico prodotti, categorie in lettura, filtri e paginazione.
-- Movimenti di scorta con storico.
-- Dashboard e pagine Thymeleaf di elenco/dettaglio.
-- Control room Inventory Pulse con aggiornamento SSE.
-- Gestione centralizzata degli errori.
-
-### Bonus facoltativi
-
-- Cache breve della dashboard nella Consumer.
-- Esportazione CSV dell'elenco filtrato.
-- Test di integrazione con Testcontainers per PostgreSQL.
+- Il client usa l'orologio solo per la visualizzazione.
+- Snapshot ed eventi contengono `serverTime`, `startsAt` ed `endsAt` in UTC ISO
+  8601.
+- Il client recupera uno snapshot dopo riconnessione o gap di `sequence`.
+- Ogni evento stanza ha una `sequence` crescente per asta.
+- Password hashate con BCrypt o Argon2.
+- Token e password mai nei log.
+- Paginazione massima 100 elementi.
+- Importi con due decimali e arrotondamento esplicito.

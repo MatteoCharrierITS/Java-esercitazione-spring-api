@@ -9,10 +9,10 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>it.esercitazione</groupId>
-	<artifactId>producer</artifactId>
+	<artifactId>liveauction-producer</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>product-api</name>
-	<description>API catalogo e magazzino</description>
+	<name>liveauction-producer</name>
+	<description>API, dominio e motore live di LiveAuction</description>
 	<url/>
 	<licenses>
 		<license/>
@@ -30,6 +30,18 @@
 		<java.version>21</java.version>
 	</properties>
 	<dependencies>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-websocket</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-mail</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>

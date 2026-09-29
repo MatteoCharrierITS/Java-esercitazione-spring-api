@@ -1,49 +1,37 @@
 # Documentazione di progettazione
 
-Questa cartella descrive la versione estesa dell'esercitazione Spring Boot. La
-consegna originale resta disponibile in [`../Consegna.md`](../Consegna.md); i
-documenti qui presenti costituiscono la specifica da seguire per la nuova
-versione.
-
-## Obiettivo in breve
-
-Realizzare due applicazioni indipendenti:
-
-- **product-api** (`:8081`): catalogo prodotti e gestione delle scorte, con
-  persistenza PostgreSQL e API REST;
-- **product-client** (`:8082`): interfaccia Thymeleaf che usa esclusivamente le
-  API del Producer.
-
-L'estensione principale trasforma il semplice CRUD in un piccolo sistema di
-magazzino. Ogni prodotto ha uno SKU e una soglia minima; carichi e scarichi
-generano movimenti storicizzati. La feature distintiva è **Inventory Pulse**, una
-control room che reagisce in tempo reale ai movimenti, mostra la salute del
-magazzino e ordina gli articoli in base all'urgenza di riordino.
+Questa è la specifica corrente di **LiveAuction**.
 
 ## Indice
 
-1. [Requisiti e perimetro](01-requisiti.md)
-2. [Architettura e componenti](02-architettura.md)
-3. [Modello dati e schema SQL](03-database.md)
-4. [Contratto delle API REST](04-api-rest.md)
-5. [Interfaccia web e flussi](05-ui-flussi.md)
-6. [Piano di lavoro e criteri di accettazione](06-piano-lavoro.md)
-7. [Inventory Pulse — feature distintiva](07-inventory-pulse.md)
+1. [Requisiti e regole di dominio](01-requisiti.md)
+2. [Architettura e comunicazione](02-architettura.md)
+3. [Modello dati PostgreSQL](03-database.md)
+4. [Contratti REST e WebSocket](04-api-rest.md)
+5. [Interfaccia e flussi utente](05-ui-flussi.md)
+6. [Roadmap e criteri di accettazione](06-piano-lavoro.md)
+7. [Motore LiveAuction](07-liveauction.md)
 
 ## Decisioni chiave
 
 | Tema | Decisione |
 | --- | --- |
-| Contratto API | prefisso `/api/v1` e DTO separati dalle entity |
-| Elenco prodotti | filtri combinabili, ordinamento e paginazione |
-| Categoria | tabella dedicata, non stringa libera sul prodotto |
-| Scorte | variazioni tramite endpoint dedicato e movimento atomico |
-| Prodotto eliminato | eliminazione logica tramite campo `attivo` |
-| Concorrenza | optimistic locking con campo `versione` |
-| Consumer | nessun accesso a JPA/PostgreSQL; usa `RestClient` |
-| Funzione distintiva | control room live “Inventory Pulse” tramite SSE |
+| Gestore aste | solo `ADMIN` |
+| Programmazione | data/ora e prezzo iniziale scelti dall'ADMIN |
+| Fuso orario | input `Europe/Rome`, persistenza UTC |
+| Apertura stanza | 3 minuti prima dell'inizio |
+| Durata asta | 7 minuti iniziali |
+| Anti-sniping | +20 secondi a ogni rialzo valido |
+| Tempo | sempre deciso dal Producer |
+| Denaro | crediti finti in portafoglio |
+| Fondi | riserva atomica della migliore offerta |
+| Prodotto | campo `astabile` esplicito e stock disponibile/bloccato |
+| Vincita | unità assegnata al vincitore e registrata negli storici |
+| Live | WebSocket/STOMP più snapshot REST |
+| Persistenza | PostgreSQL + Flyway |
 
 ## Fuori perimetro
 
-Per mantenere l'esercizio affrontabile, non sono richiesti autenticazione,
-utenti, ordini, pagamenti, upload immagini, code di messaggi o deployment cloud.
+Pagamenti reali, spedizioni integrate, chat libera, immagini caricate dagli
+utenti, broker esterno e scalabilità multi-nodo. L'email al vincitore è una
+notifica informativa e non determina la validità della chiusura.

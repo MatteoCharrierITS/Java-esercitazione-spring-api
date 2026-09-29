@@ -9,10 +9,10 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>it.esercitazione</groupId>
-	<artifactId>consumer</artifactId>
+	<artifactId>liveauction-consumer</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>product-client</name>
-	<description>Client web del catalogo</description>
+	<name>liveauction-consumer</name>
+	<description>Interfaccia web Thymeleaf di LiveAuction</description>
 	<url/>
 	<licenses>
 		<license/>
@@ -30,6 +30,10 @@
 		<java.version>21</java.version>
 	</properties>
 	<dependencies>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-thymeleaf</artifactId>

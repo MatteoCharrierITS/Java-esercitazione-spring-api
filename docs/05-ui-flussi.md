@@ -1,121 +1,106 @@
-# Interfaccia web e flussi
+# Interfaccia e flussi utente
 
-## Rotte della Consumer
+## Rotte Consumer
 
-| Rotta | Contenuto |
-| --- | --- |
-| `/` | redirect a `/dashboard` |
-| `/dashboard` | KPI e prodotti da riordinare |
-| `/control-room` | Inventory Pulse in tempo reale |
-| `/prodotti` | elenco, ricerca, filtri e paginazione |
-| `/prodotti/{id}` | dettaglio e ultimi movimenti |
-| `/eventi/scorte` | relay SSE Consumer → browser |
+| Rotta | Accesso | Pagina |
+| --- | --- | --- |
+| `/login` | pubblico | accesso |
+| `/registrazione` | pubblico | nuovo account |
+| `/marketplace` | pubblico | catalogo completo |
+| `/prodotti/{id}` | pubblico | dettaglio, stock e astabilità |
+| `/aste` | pubblico | lobby |
+| `/aste/{id}` | USER | stanza LiveAuction |
+| `/inventario` | USER | prodotti posseduti |
+| `/me/vittorie` | USER | storico personale vittorie |
+| `/impostazioni/portafoglio` | USER | saldo finto e ledger |
+| `/admin/prodotti` | ADMIN | catalogo, stock e flag astabile |
+| `/admin/aste/nuova` | ADMIN | programmazione asta |
+| `/admin/aste/storico` | ADMIN | storico globale e vincitori |
 
-La Consumer inoltra alle API solo i parametri noti e conserva i filtri nei link
-di paginazione.
+## Catalogo
 
-## Dashboard
+Ogni card indica testualmente:
 
-Wireframe indicativo:
+- `DISPONIBILE ALL'ASTA` oppure `NON ASTABILE`;
+- quantità disponibile;
+- numero di aste programmate o live.
 
-```text
-┌──────────────────────────────────────────────────────────────┐
-│ Catalogo & Magazzino              Dashboard | Prodotti       │
-├──────────────────────────────────────────────────────────────┤
-│ [20 prodotti] [417 pezzi] [€ 84.572,30] [⚠ 3 sotto scorta] │
-│                                                              │
-│ Da riordinare                                                │
-│ ┌─────────────┬──────────────────────┬──────────┬───────────┐ │
-│ │ SKU         │ Prodotto             │ Giacenza │ Soglia    │ │
-│ ├─────────────┼──────────────────────┼──────────┼───────────┤ │
-│ │ UFF-SCR-001 │ Scrivania regolabile │    2     │    5      │ │
-│ └─────────────┴──────────────────────┴──────────┴───────────┘ │
-└──────────────────────────────────────────────────────────────┘
-```
+Il pannello ADMIN permette di modificare `astabile` e stock. Il pulsante
+“Programma asta” è attivo soltanto con `astabile = true` e almeno una unità
+disponibile; se è disabilitato, la UI ne mostra il motivo.
 
-## Inventory Pulse
+## Programmazione ADMIN
 
-È la pagina “da demo”: scura, leggibile anche su uno schermo grande e animata
-solo dove comunica un cambiamento reale.
+Il form contiene:
 
-```text
-┌──────────────────────────────────────────────────────────────────────┐
-│ ● LIVE   INVENTORY PULSE                              14:30:01       │
-├─────────────────┬──────────────────────┬─────────────────────────────┤
-│ SALUTE          │ VALORE MAGAZZINO     │ ALERT                       │
-│    ╭────╮       │ € 84.572,30          │ 2 critici · 3 da riordinare │
-│   │ 74% │       │ 417 pezzi            │                             │
-│    ╰────╯       │                      │                             │
-├─────────────────┴──────────────────────┼─────────────────────────────┤
-│ RADAR CATEGORIE                        │ LIVE FEED                   │
-│ Informatica  ████████░░ 80             │ 14:30  ↓ 2 Laptop Pro 15   │
-│ Accessori    █████████░ 90             │ 14:28  ↑ 8 Hub USB-C       │
-│ Ufficio      ████░░░░░░ 40             │ 14:21  = 0 Stampante       │
-├────────────────────────────────────────┴─────────────────────────────┤
-│ PRIORITÀ RIORDINO                                                   │
-│ [CRITICA] Scrivania regolabile · 0/5 · suggeriti 10                 │
-│ [ALTA]    Stampante laser       · 2/6 · suggeriti 10                │
-└──────────────────────────────────────────────────────────────────────┘
-```
+- prodotto selezionabile tra quelli astabili e disponibili;
+- data e ora di inizio tramite controllo `datetime-local`;
+- indicazione fissa del fuso `Europe/Rome`;
+- prezzo iniziale in CRD;
+- riepilogo: apertura stanza `-3 min`, durata `7 min`, `+20s` per rilancio.
 
-Comportamento visivo:
+Dopo la conferma, una unità risulta bloccata e l'asta appare nella lobby.
 
-- il pallino `LIVE` è verde quando lo stream SSE è connesso e grigio con testo
-  `RICONNESSIONE…` quando cade;
-- un movimento nuovo entra in cima al feed con una breve evidenziazione;
-- il valore della salute anima la transizione, ma rispetta
-  `prefers-reduced-motion`;
-- nessun lampeggio continuo e nessun colore senza etichetta testuale;
-- sotto i 768 px i pannelli diventano una singola colonna.
+## Lobby
 
-È sufficiente HTML, CSS e JavaScript nativo con `EventSource`; un framework
-front-end o una libreria di grafici non sono necessari.
+Filtri: stato, categoria, testo, “in partenza” e “a cui partecipo”. Ogni card
+mostra prezzo iniziale o corrente, numero offerte e uno di questi countdown:
 
-Lo stato scorte usa testo e colore, non solo colore:
+- `La stanza apre tra…` per `PROGRAMMATA`;
+- `L'asta inizia tra…` per `STANZA_APERTA`;
+- `Termina tra…` per `APERTA`;
+- vincitore o `Nessuna offerta` per `CHIUSA`.
 
-- `Disponibile` — verde;
-- `Sotto soglia` — ambra;
-- `Esaurito` — rosso.
-
-## Elenco prodotti
+## Stanza LiveAuction
 
 ```text
-┌──────────────────────────────────────────────────────────────┐
-│ Cerca [ laptop / SKU      ] Categoria [Tutte ▼]              │
-│ Scorta [Tutte ▼] Ordina [Prezzo decrescente ▼] [Applica]    │
-├──────┬─────────────┬──────────────┬──────────┬──────┬────────┤
-│ SKU  │ Nome        │ Categoria    │ Prezzo   │ Q.tà │ Stato  │
-├──────┼─────────────┼──────────────┼──────────┼──────┼────────┤
-│ ...  │ ...         │ ...          │ ...      │ ...  │ ...    │
-└──────┴─────────────┴──────────────┴──────────┴──────┴────────┘
-                         ‹ Precedente  Pagina 1 di 3  Successiva ›
+┌──────────────────────────────────────────────────────────────────┐
+│ ● LIVE  Laptop Pro 15                         04:42 +20s/rialzo  │
+├───────────────────────────────┬──────────────────────────────────┤
+│                               │ OFFERTA ATTUALE                  │
+│        immagine/prodotto      │ 630,00 CRD                       │
+│                               │ leader: g***i                    │
+│ Prezzo iniziale: 500 CRD      │                                  │
+│ Inizio: 18:30 Europe/Rome     │ [ 631,00 ] [ RIALZA ]            │
+├───────────────────────────────┼──────────────────────────────────┤
+│ IL TUO PORTAFOGLIO            │ LIVE FEED                        │
+│ disponibile  8.750 CRD        │ 18:34 g***i → 630 CRD (+20s)   │
+│ riservato     1.250 CRD       │ 18:33 l***a → 620 CRD (+20s)   │
+└───────────────────────────────┴──────────────────────────────────┘
 ```
 
-- Il nome porta al dettaglio.
-- Con zero risultati si mostra un empty state, non una tabella vuota.
-- Parametri errati vengono corretti al default o producono un messaggio chiaro.
+Durante `STANZA_APERTA` lo stesso layout mostra utenti presenti e countdown
+all'inizio, ma il form delle offerte è disabilitato. Al termine compare un
+annuncio evidente con vincitore e importo finale, oppure “Asta conclusa senza
+offerte”.
 
-## Dettaglio prodotto
+Stati connessione: `LIVE`, `RICONNESSIONE…`, `SINCRONIZZAZIONE…`. Dopo la
+riconnessione il form resta disabilitato finché non arriva uno snapshot valido.
+Gli ultimi venti secondi sono evidenziati rispettando `prefers-reduced-motion`.
 
-Mostra anagrafica, prezzo, categoria, giacenza, soglia e badge dello stato.
-Sotto l'anagrafica mostra gli ultimi dieci movimenti dal più recente.
+## Flussi principali
 
-L'inserimento di carichi/scarichi dall'interfaccia è facoltativo: l'endpoint REST
-è obbligatorio, mentre la pagina può limitarsi alla consultazione.
+### Programmare
 
-## Stati di errore
+Login ADMIN → prodotti → verifica `astabile` e quantità → data/ora e prezzo
+iniziale → riepilogo → conferma → unità bloccata → asta in lobby.
 
-| Situazione | Comportamento UI |
-| --- | --- |
-| Producer non raggiungibile | pagina dedicata, messaggio e pulsante “Riprova” |
-| prodotto inesistente | pagina 404 coerente con il layout |
-| filtri senza risultati | suggerimento di rimuovere uno o più filtri |
-| errore inatteso | messaggio generico; dettaglio tecnico solo nei log |
+### Partecipare
 
-## Accessibilità e formattazione
+Login USER → lobby → apertura stanza tre minuti prima → ticket WS → join →
+attesa → evento `AUCTION_STARTED` → rilanci → chiusura e annuncio vincitore.
 
-- Etichette associate ai campi del form.
-- Navigazione da tastiera e focus visibile.
-- Prezzi formattati in locale italiano (`€ 1.299,90`).
-- Date visualizzate in formato italiano, pur mantenendo ISO 8601 nelle API.
-- Tabelle con intestazioni semantiche e badge accompagnati da testo.
+### Vincere
+
+Chiusura → addebito crediti → prodotto nell'inventario → voce in “Le mie
+vittorie” → email riepilogativa post-commit.
+
+### Riconnettersi
+
+WebSocket perso → indicatore offline → nuovo ticket → subscribe → snapshot REST
+→ confronto `sequence` → riabilitazione comandi solo se l'asta è `APERTA`.
+
+### Consultare lo storico ADMIN
+
+Login ADMIN → storico aste → filtri → dettaglio con prodotto, vincitore, prezzo
+iniziale, prezzo finale, date e numero di offerte.

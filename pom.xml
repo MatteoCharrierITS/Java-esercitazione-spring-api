@@ -5,12 +5,12 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>it.esercitazione</groupId>
-    <artifactId>catalogo-magazzino</artifactId>
+    <artifactId>liveauction</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <name>catalogo-magazzino</name>
-    <description>Aggregator dei moduli Producer e Consumer</description>
+    <name>LiveAuction</name>
+    <description>Aggregator dei moduli LiveAuction Producer e Consumer</description>
 
     <modules>
         <module>producer</module>

@@ -1,97 +1,82 @@
-# Piano di lavoro e criteri di accettazione
+# Roadmap e criteri di accettazione
 
-Questo documento definisce l'ordine consigliato di implementazione, senza
-prescrivere i dettagli del codice.
+## Fase 1 — Identità, catalogo e portafoglio
 
-## Fase 1 — Fondamenta Producer
+- Security, registrazione, login e ruoli USER/ADMIN.
+- Entity utenti, prodotti, inventario, wallet e ledger.
+- Campi prodotto `astabile`, `quantitaDisponibile` e `quantitaBloccata`.
+- Migrazioni Flyway e seed demo.
+- Catalogo e pannello amministrativo.
 
-- Creare il modulo Spring Boot, configurare PostgreSQL e le migrazioni.
-- Modellare categorie e prodotti con DTO separati.
-- Implementare CRUD logico, validazione e gestione errori.
-- Aggiungere ricerca combinata, ordinamento e paginazione.
+## Fase 2 — Programmazione e motore transazionale
 
-Completata quando:
+- Tabelle/entity `aste` e `offerte`.
+- Programmazione ADMIN con data/ora `Europe/Rome` e prezzo iniziale.
+- Lock prodotto e blocco atomico di una unità.
+- Stati `PROGRAMMATA`, `STANZA_APERTA`, `APERTA`, `CHIUSA`, `ANNULLATA`.
+- Apertura stanza a meno tre minuti e asta di sette minuti.
+- Offerta con lock, idempotenza e riserva fondi.
+- Estensione esatta di venti secondi.
+- Chiusura e assegnazione idempotente al vincitore.
+- Test di concorrenza con PostgreSQL/Testcontainers.
 
-- lo schema nasce da zero tramite migrazioni;
-- gli endpoint prodotto rispettano status e payload documentati;
-- filtri combinati e paginazione restituiscono risultati coerenti;
-- nessuna entity JPA è serializzata direttamente.
+## Fase 3 — REST e Consumer
 
-## Fase 2 — Magazzino e dashboard
+- Sessione web e client autenticato.
+- Marketplace, inventario, portafoglio e vittorie personali.
+- Pagine ADMIN per prodotti, programmazione e storico globale.
+- Lobby, pre-live e snapshot della stanza.
+- Gestione errori quando il Producer non è disponibile.
 
-- Implementare movimento e aggiornamento atomico della giacenza.
-- Gestire scorta insufficiente e aggiornamenti concorrenti.
-- Implementare query aggregate della dashboard.
+## Fase 4 — LiveAuction WebSocket e notifiche
 
-Completata quando:
-
-- un carico/scarico modifica la quantità e crea un solo movimento;
-- in caso di errore non viene salvata nessuna modifica parziale;
-- uno scarico oltre disponibilità restituisce `409`;
-- KPI e prodotti sotto soglia riflettono i dati correnti.
-
-## Fase 3 — Consumer
-
-- Configurare `RestClient` e DTO client.
-- Realizzare dashboard, elenco, dettaglio e navigazione.
-- Gestire filtri, pagine e indisponibilità del Producer.
-
-Completata quando:
-
-- la Consumer funziona senza dipendenze JPA/PostgreSQL;
-- ogni dato visualizzato proviene dalle API;
-- spegnendo il Producer appare una pagina di errore controllata;
-- la navigazione conserva i filtri applicati.
-
-## Fase 4 — Inventory Pulse
-
-- Calcolare salute, priorità e suggerimento di riordino nel Producer.
-- Pubblicare un evento SSE soltanto dopo il commit di un movimento.
-- Realizzare il relay SSE nella Consumer e la control room responsive.
-- Aggiungere riconnessione automatica e polling di sicurezza.
-
-Completata quando:
-
-- aprendo la control room compare lo stato `LIVE`;
-- una chiamata all'endpoint movimenti aggiorna KPI e feed senza refresh manuale;
-- interrompendo lo stream compare `RICONNESSIONE…` senza rompere la pagina;
-- la pagina torna coerente anche dopo aver perso uno o più eventi.
+- Ticket breve e handshake STOMP.
+- Topic stanza e coda privata.
+- Countdown client sincronizzato per pre-live e live.
+- Feed, annuncio vincitore, riconnessione e recupero `sequence`.
+- Email post-commit al vincitore con retry degli errori.
 
 ## Matrice minima di test
 
-| Area | Scenario | Esito atteso |
-| --- | --- | --- |
-| Creazione | SKU nuovo e dati validi | `201`, location e dettaglio |
-| Creazione | SKU duplicato | `409` |
-| Validazione | prezzo zero o quantità negativa | `400` |
-| Ricerca | nome + categoria + sort | risultati filtrati e ordinati |
-| Paginazione | pagina oltre l'ultima | `200`, content vuoto |
-| Dettaglio | id inesistente | `404` |
-| Update | versione superata | `409` |
-| Delete | prodotto esistente o già inattivo | `204` |
-| Magazzino | carico di 5 | quantità +5 e movimento creato |
-| Magazzino | scarico oltre giacenza | `409`, nessuna modifica |
-| Magazzino | rettifica a zero | stato `ESAURITO` |
-| Dashboard | prodotto passa sotto soglia | contatore aggiornato |
-| Inventory Pulse | nuovo movimento | feed e KPI aggiornati live |
-| Inventory Pulse | stream interrotto | stato offline e fallback polling |
-| Consumer | Producer spento | pagina servizio non disponibile |
+| Scenario | Esito atteso |
+| --- | --- |
+| USER prova a programmare un'asta | `403` |
+| prodotto con `astabile=false` | `422` |
+| prodotto senza quantità disponibile | `409` |
+| due programmazioni sull'ultima unità | una sola riesce |
+| asta creata | disponibile -1, bloccata +1 |
+| data locale valida | conversione UTC corretta |
+| accesso oltre tre minuti prima | `STANZA_NON_APERTA` |
+| join durante pre-live | consentito |
+| offerta durante pre-live | rifiutata |
+| raggiunto `startsAt` | asta `APERTA`, durata 7 minuti |
+| prima offerta sotto il prezzo iniziale | rifiutata |
+| saldo insufficiente | nessuna riserva, rifiuto |
+| rialzo valido | nuovo leader, `endsAt + 20s` |
+| leader superato | riserva precedente liberata |
+| stesso `clientBidId` reinviato | nessun doppio addebito |
+| due rialzi simultanei | ordine unico, un solo leader |
+| offerta al limite | decide il tempo server |
+| chiusura con vincitore | addebito e assegnazione una volta |
+| chiusura senza offerte | unità sbloccata |
+| asta annullata senza offerte | unità sbloccata |
+| riavvio con transizione scaduta | stato recuperato |
+| gap di `sequence` | client richiede snapshot |
+| errore invio email | vittoria confermata, invio ritentabile |
+| storico USER | solo vittorie dell'utente |
+| storico ADMIN | tutte le aste concluse |
 
 ## Definition of Done
 
-La consegna è completa quando:
-
-- Producer e Consumer si avviano separatamente sulle porte previste;
-- PostgreSQL è accessibile soltanto dal Producer;
-- contratto API, schema database e comportamento reale coincidono;
-- sono presenti dati demo significativi;
-- i test coprono almeno service, controller REST e client HTTP;
-- i README dei due moduli spiegano configurazione e avvio;
-- password e file locali non sono versionati.
-
-## Scelte lasciate allo sviluppatore
-
-- uso di Specification JPA, query JPQL o metodi repository per i filtri;
-- Bootstrap o CSS proprietario per Thymeleaf;
-- MapStruct o mapping manuale dei DTO;
-- cache Consumer e test con Testcontainers, entrambi bonus.
+- Producer e Consumer restano applicazioni indipendenti.
+- Solo l'ADMIN programma le aste.
+- Nessuna asta nasce senza data/ora e prezzo iniziale validi.
+- Nessuna unità può essere impegnata in due aste.
+- Il dominio usa PostgreSQL reale nei test di integrazione critici.
+- Nessun importo usa `double`.
+- Non esistono percorsi che modificano saldo senza ledger.
+- Nessuna asta può trasferire due volte crediti o prodotto.
+- UI e API indicano esplicitamente `astabile` e stock.
+- Stanza, durata ed estensione rispettano 3 minuti, 7 minuti e 20 secondi.
+- Il Compose `prod` porta tutti i servizi allo stato healthy.
+- Contratti e implementazione coincidono.

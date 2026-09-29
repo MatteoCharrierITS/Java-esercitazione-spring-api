@@ -1,11 +1,11 @@
-name: catalogo-magazzino
+name: liveauction
 
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: catalogo-magazzino-postgres
+    container_name: liveauction-postgres
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-esercitazione_api}
+      POSTGRES_DB: ${POSTGRES_DB:-liveauction}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     ports:
@@ -15,7 +15,7 @@ services:
     healthcheck:
       test:
         - CMD-SHELL
-        - pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-esercitazione_api}
+        - pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-liveauction}
       interval: 5s
       timeout: 3s
       retries: 10
@@ -27,12 +27,12 @@ services:
     build:
       context: ./producer
       dockerfile: Dockerfile
-    image: catalogo-magazzino/producer:local
-    container_name: catalogo-magazzino-producer
+    image: liveauction/producer:local
+    container_name: liveauction-producer
     environment:
       SPRING_PROFILES_ACTIVE: prod
       DOCKER_COMPOSE_ENABLED: "false"
-      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-esercitazione_api}
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-liveauction}
       DB_USERNAME: ${POSTGRES_USER:-postgres}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       JAVA_TOOL_OPTIONS: ${PRODUCER_JAVA_OPTS:--XX:MaxRAMPercentage=75.0}
@@ -59,11 +59,11 @@ services:
     build:
       context: ./consumer
       dockerfile: Dockerfile
-    image: catalogo-magazzino/consumer:local
-    container_name: catalogo-magazzino-consumer
+    image: liveauction/consumer:local
+    container_name: liveauction-consumer
     environment:
       SPRING_PROFILES_ACTIVE: prod
-      PRODUCT_API_URL: http://producer:8081/api/v1
+      LIVEAUCTION_PRODUCER_URL: http://producer:8081/api/v1
       JAVA_TOOL_OPTIONS: ${CONSUMER_JAVA_OPTS:--XX:MaxRAMPercentage=75.0}
     ports:
       - "${CONSUMER_PORT:-8082}:8082"
@@ -85,4 +85,4 @@ services:
 
 volumes:
   postgres-data:
-    name: catalogo-magazzino-postgres-data
+    name: liveauction-postgres-data
