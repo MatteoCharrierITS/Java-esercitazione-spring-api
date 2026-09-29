@@ -37,6 +37,7 @@
 - Lo schema è gestito da Flyway in `producer/src/main/resources/db/migration/`;
   Hibernate usa `ddl-auto=validate`. Aggiungi nuove migrazioni versionate invece
   di modificare quelle già applicate in ambienti condivisi.
+- Le migrazioni creano una tabella per file e non inseriscono dati demo.
 
 ## Verifiche
 

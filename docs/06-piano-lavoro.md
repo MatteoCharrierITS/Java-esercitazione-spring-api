@@ -5,7 +5,7 @@
 - Security, registrazione, login e ruoli USER/ADMIN.
 - Entity utenti, prodotti, inventario, wallet e ledger.
 - Campi prodotto `astabile`, `quantitaDisponibile` e `quantitaBloccata`.
-- Migrazioni Flyway e seed demo.
+- Migrazioni Flyway, una per tabella, senza dati iniziali.
 - Catalogo e pannello amministrativo.
 
 ## Fase 2 — Programmazione e motore transazionale
