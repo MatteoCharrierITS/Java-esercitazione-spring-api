@@ -1,0 +1,1 @@
+package it.esercitazione.liveauction.producer.categoria;
