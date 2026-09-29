@@ -183,6 +183,17 @@ Sono affiancate da `utenti`, `portafogli`, `movimenti_portafoglio`, `prodotti`,
 `categorie` e `inventario_utenti`. Schema e DDL sono descritti in
 [docs/03-database.md](docs/03-database.md).
 
+Le migrazioni Flyway del Producer creano lo schema e i dati demo all'avvio su
+PostgreSQL. Gli account `admin_demo`, `alice_demo`, `bruno_demo` e `carla_demo`
+usano la password iniziale `Demo123!`; è destinata soltanto alla demo e va
+cambiata prima di un uso reale. Le due aste demo partono rispettivamente uno e
+due giorni dopo la prima applicazione delle migrazioni.
+
+La registrazione crea anche un portafoglio a zero. Il login restituisce un
+token Bearer valido 30 minuti. Con il profilo `prod`, impostare
+`AUTH_JWT_SECRET` in `.env` con una stringa casuale di almeno 32 byte: senza
+questa chiave il Producer non si avvia.
+
 ## Struttura repository
 
 ```text
@@ -232,6 +243,7 @@ docker compose --profile prod down
 - [Architettura](docs/02-architettura.md)
 - [Database PostgreSQL](docs/03-database.md)
 - [REST e WebSocket](docs/04-api-rest.md)
+- [Collection Postman](docs/postman/README.md)
 - [Interfaccia e flussi](docs/05-ui-flussi.md)
 - [Roadmap e test](docs/06-piano-lavoro.md)
 - [Motore LiveAuction](docs/07-liveauction.md)

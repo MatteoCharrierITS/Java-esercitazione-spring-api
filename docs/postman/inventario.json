@@ -1,0 +1,29 @@
+{
+  "info": {
+    "name": "LiveAuction • Inventario",
+    "_postman_id": "28d2b9bb-2a70-48b8-ae31-a289f4e3e140",
+    "description": "Previsto dal contratto docs/04-api-rest.md; l'endpoint non è ancora implementato.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Il mio inventario",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/me/inventario",
+        "description": "Previsto dal contratto docs/04-api-rest.md; l'endpoint non è ancora implementato.",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{userToken}}",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
