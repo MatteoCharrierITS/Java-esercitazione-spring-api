@@ -4,42 +4,43 @@
 
 Il progetto è suddiviso per dominio, così ogni persona può lavorare in un
 package dedicato limitando i conflitti Git. Chi non ha ancora un incarico deve
-scegliere una delle aree disponibili indicate sotto e sostituire `Da scegliere`
-nella propria riga.
+scegliere una delle aree disponibili indicate sotto. Risultano ancora senza
+incarico MONDIR, TOMMI, ANDREA e una seconda voce per MATTEO.
 
-| Persona | Area scelta |
-| --- | --- |
-| MATTEO | Autenticazione e utenti |
-| MAIKOL | WebSocket e notifiche |
-| MONDIR | Da scegliere |
-| MATTEO | Da scegliere |
-| TOMMI | Da scegliere |
-| ANDREA | Da scegliere |
-| CRISTIAN | Prodotti e catalogo |
+### Autenticazione e utenti - MATTEO
 
-### Aree assegnate
+Registrazione, login, ruoli `USER` e `ADMIN`, password hashate, sicurezza degli
+endpoint e gestione della sessione o dei token.
 
-- **Autenticazione e utenti — MATTEO:** registrazione, login, ruoli `USER` e
-  `ADMIN`, password hashate, sicurezza degli endpoint e gestione della sessione
-  o dei token.
-- **WebSocket e notifiche — MAIKOL:** configurazione STOMP, ticket temporanei,
-  eventi delle stanze, presenza degli utenti, riconnessione ed email inviata al
-  vincitore dopo la chiusura.
-- **Prodotti e catalogo — CRISTIAN:** categorie, prodotti, CRUD ADMIN, ricerca,
-  paginazione, campo `astabile` e gestione delle quantità disponibili e
-  bloccate.
+### WebSocket e notifiche - MAIKOL
 
-### Aree ancora disponibili
+Configurazione STOMP, ticket temporanei, eventi delle stanze, presenza degli
+utenti, riconnessione ed email inviata al vincitore dopo la chiusura.
 
-- **Portafoglio e movimenti:** saldo totale, riservato e disponibile, ledger
-  dei movimenti e controllo dei crediti prima di accettare un'offerta.
-- **Programmazione delle aste:** creazione riservata all'ADMIN, prezzo iniziale,
-  conversione `Europe/Rome` → UTC, apertura della stanza tre minuti prima e
-  blocco atomico dello stock.
-- **Offerte e chiusura:** validazione dei rilanci, incremento di venti secondi,
-  concorrenza, selezione del vincitore e trasferimento di crediti e prodotto.
-- **Consumer e interfaccia:** client REST, pagine Thymeleaf, marketplace, lobby,
-  stanza live, inventario, portafoglio e pannello amministrativo.
+### Prodotti e catalogo - CRISTIAN
+
+Categorie, prodotti, CRUD ADMIN, ricerca, paginazione, campo `astabile` e
+gestione delle quantità disponibili e bloccate.
+
+### Portafoglio e movimenti - DA ASSEGNARE
+
+Saldo totale, riservato e disponibile, ledger dei movimenti e controllo dei
+crediti prima di accettare un'offerta.
+
+### Programmazione delle aste - DA ASSEGNARE
+
+Creazione riservata all'ADMIN, prezzo iniziale, conversione `Europe/Rome` → UTC,
+apertura della stanza tre minuti prima e blocco atomico dello stock.
+
+### Offerte e chiusura - DA ASSEGNARE
+
+Validazione dei rilanci, incremento di venti secondi, concorrenza, selezione
+del vincitore e trasferimento di crediti e prodotto.
+
+### Consumer e interfaccia - DA ASSEGNARE
+
+Client REST, pagine Thymeleaf, marketplace, lobby, stanza live, inventario,
+portafoglio e pannello amministrativo.
 
 ### Regole di collaborazione
 
