@@ -1,0 +1,87 @@
+# Build Java / Maven
+target/
+**/target/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+*.log
+
+# Maven: conserva il wrapper, ignora cache e file temporanei
+.mvn/timing.properties
+!.mvn/wrapper/maven-wrapper.jar
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.flattened-pom.xml
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# Eclipse / Spring Tool Suite
+.classpath
+.project
+.settings/
+.springBeans
+.sts4-cache/
+bin/
+
+# Visual Studio Code
+.vscode/
+
+# Configurazioni locali e segreti
+.env
+.env.*
+!.env.example
+application-local.properties
+application-local.yml
+application-local.yaml
+**/application-local.properties
+**/application-local.yml
+**/application-local.yaml
+*.pem
+*.key
+*.p12
+*.jks
+
+# Runtime Spring Boot
+spring.log
+logs/
+**/logs/
+*.pid
+
+# PostgreSQL locale: dump e directory dati
+*.dump
+*.backup
+*.sql.gz
+postgres-data/
+**/postgres-data/
+
+# Test, coverage e report
+.coverage/
+coverage/
+*.exec
+surefire-reports/
+failsafe-reports/
+
+# File temporanei
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
