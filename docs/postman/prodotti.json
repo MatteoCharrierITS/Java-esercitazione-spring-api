@@ -1,0 +1,100 @@
+{
+  "info": {
+    "name": "LiveAuction • Prodotti",
+    "_postman_id": "30d10e9b-c2fe-47c0-a65e-3fe7ebe3c137",
+    "description": "Previsto dal contratto docs/04-api-rest.md; l'endpoint non è ancora implementato.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Catalogo paginato",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/prodotti?page=0&size=12",
+        "description": "Previsto dal contratto docs/04-api-rest.md; l'endpoint non è ancora implementato. Filtri previsti: query, categoria, astabile.",
+        "auth": {
+          "type": "noauth"
+        }
+      }
+    },
+    {
+      "name": "Dettaglio prodotto",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/prodotti/{{prodottoId}}",
+        "description": "Previsto dal contratto docs/04-api-rest.md; l'endpoint non è ancora implementato.",
+        "auth": {
+          "type": "noauth"
+        }
+      }
+    },
+    {
+      "name": "Acquisto a prezzo fisso",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/prodotti/{{prodottoId}}/acquisti",
+        "description": "Previsto dal contratto docs/04-api-rest.md; l'endpoint non è ancora implementato. Il body di esempio è provvisorio: aggiornare con il DTO definitivo.",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{userToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"quantita\": 1\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Modifica prodotto ADMIN",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/admin/prodotti/{{prodottoId}}",
+        "description": "Previsto dal contratto docs/04-api-rest.md; l'endpoint non è ancora implementato. Il body di esempio è provvisorio: aggiornare con il DTO definitivo.",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{adminToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"astabile\": true,\n  \"quantitaDisponibile\": 3\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

@@ -11,7 +11,14 @@ flowchart LR
     P -.->|dopo il commit| M[Servizio email]
 ```
 
-La Consumer rende Thymeleaf e mantiene l'access token nella sessione server-side.
+La Consumer rende Thymeleaf e mantiene access token e refresh token nella
+sessione server-side. Il browser invia le credenziali alla Consumer, che chiama
+`POST /auth/login` sul Producer. Per ogni chiamata protetta la Consumer invia
+`Authorization: Bearer <accessToken>`; alla scadenza usa `POST /auth/refresh` e
+sostituisce entrambi i token nella sessione. Al logout chiama
+`POST /auth/logout` e svuota la sessione. La Consumer può adattare la UI al
+ruolo, ma l'autorizzazione resta al Producer. La sicurezza web della Consumer
+è ancora da implementare: attualmente consente tutte le richieste.
 Per entrare in una stanza richiede al Producer un ticket WebSocket monouso,
 valido 30 secondi. Il token principale non viene esposto al JavaScript.
 

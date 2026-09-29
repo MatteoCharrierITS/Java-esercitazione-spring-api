@@ -1,0 +1,62 @@
+{
+  "info": {
+    "name": "LiveAuction • Portafoglio",
+    "_postman_id": "bbcb8340-cae7-47fa-9376-ac004a4aa984",
+    "description": "Previsto dal contratto docs/04-api-rest.md; l'endpoint non è ancora implementato.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Saldo e movimenti",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/me/portafoglio",
+        "description": "Previsto dal contratto docs/04-api-rest.md; l'endpoint non è ancora implementato.",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{userToken}}",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Imposta saldo virtuale",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/me/portafoglio/impostazioni",
+        "description": "Previsto dal contratto docs/04-api-rest.md; l'endpoint non è ancora implementato. L'importo deve restare almeno pari al saldo riservato.",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{userToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"saldoTotale\": 10000\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

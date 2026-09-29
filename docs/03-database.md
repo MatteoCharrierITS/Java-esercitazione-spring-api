@@ -26,9 +26,16 @@ erDiagram
     ASTE ||--o{ OFFERTE : riceve
     UTENTI ||--o{ OFFERTE : effettua
     UTENTI ||--o{ ASTE : vince
+    UTENTI ||--o{ AUTH_SESSIONS : apre
 ```
 
 ## Tabelle delle aste
+
+`auth_sessions` memorizza le sessioni di autenticazione: ID UUID, utente,
+hash SHA-256 del refresh token, scadenza e data di revoca. È creata dalla
+migrazione V9; i refresh token in chiaro non vengono salvati nel database.
+La cancellazione dell'account conserva `utenti.id` per le relazioni storiche,
+imposta `attivo = FALSE` e sostituisce username, email e hash della password.
 
 Sono necessarie due tabelle:
 
@@ -172,5 +179,5 @@ quantita_disponibile + quantita_bloccata + unità assegnate agli inventari
 `datetime-local` viene interpretato esplicitamente in `Europe/Rome` e convertito
 in UTC prima della persistenza. Le API restituiscono date ISO 8601 con offset UTC.
 
-Le migrazioni Flyway dovranno creare dati demo con almeno un ADMIN, tre utenti,
-dieci prodotti con valori `astabile` e stock differenti e due aste programmate.
+Le migrazioni Flyway creano soltanto le tabelle e gli indici, una tabella per
+file. Utenti, prodotti e aste vanno creati esplicitamente dopo l'avvio.

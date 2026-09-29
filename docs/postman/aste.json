@@ -1,0 +1,167 @@
+{
+  "info": {
+    "name": "LiveAuction • Aste",
+    "_postman_id": "833135da-ce7e-4249-8eb7-4ed4cea808d1",
+    "description": "Previsto dal contratto docs/04-api-rest.md; l'endpoint non è ancora implementato. La connessione STOMP /ws richiede un client WebSocket e non è rappresentata in Collection v2.1.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Lobby delle aste",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/aste",
+        "description": "Previsto dal contratto docs/04-api-rest.md; l'endpoint non è ancora implementato. Filtri futuri: stato, categoria, testo.",
+        "auth": {
+          "type": "noauth"
+        }
+      }
+    },
+    {
+      "name": "Snapshot asta",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/aste/{{astaId}}",
+        "description": "Previsto dal contratto docs/04-api-rest.md; l'endpoint non è ancora implementato.",
+        "auth": {
+          "type": "noauth"
+        }
+      }
+    },
+    {
+      "name": "Ticket WebSocket USER",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{baseUrl}}/aste/{{astaId}}/ticket",
+        "description": "Previsto dal contratto docs/04-api-rest.md; l'endpoint non è ancora implementato. Richiedere da tre minuti prima dell'inizio.",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{userToken}}",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Programma asta ADMIN",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/admin/aste",
+        "description": "Previsto dal contratto docs/04-api-rest.md; l'endpoint non è ancora implementato. La data locale viene generata un giorno avanti per non diventare obsoleta.",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{adminToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"prodottoId\": \"{{prodottoId}}\",\n  \"inizioLocale\": \"{{inizioLocale}}\",\n  \"timeZone\": \"Europe/Rome\",\n  \"prezzoIniziale\": 30\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.variables.set('inizioLocale', new Date(Date.now() + 86400000).toISOString().slice(0, 19));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.response.code === 201) {",
+              "  const location = pm.response.headers.get('Location') || '';",
+              "  const match = location.match(/\\/aste\\/(\\d+)$/);",
+              "  if (match) pm.environment.set('astaId', match[1]);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Annulla asta ADMIN",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{baseUrl}}/admin/aste/{{astaId}}/annullamento",
+        "description": "Previsto dal contratto docs/04-api-rest.md; l'endpoint non è ancora implementato. Modifica lo stato dell'asta: usare solo su un'asta di prova.",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{adminToken}}",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Le mie vittorie",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/me/vittorie",
+        "description": "Previsto dal contratto docs/04-api-rest.md; l'endpoint non è ancora implementato.",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{userToken}}",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Storico aste ADMIN",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/admin/aste/storico",
+        "description": "Previsto dal contratto docs/04-api-rest.md; l'endpoint non è ancora implementato. Filtri previsti: prodotto, vincitore e intervallo temporale.",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{adminToken}}",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
