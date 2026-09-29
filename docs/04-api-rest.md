@@ -36,6 +36,30 @@
 
 ## Autenticazione
 
+### Regole di accesso nel Producer
+
+Il Producer valida il JWT e usa il suo `sub` come ID utente. A ogni richiesta
+protetta controlla che la sessione sia valida e che l'utente sia ancora attivo;
+legge poi il ruolo corrente dal database. `Ruolo.USER` e `Ruolo.ADMIN` diventano
+rispettivamente le autorità Spring `ROLE_USER` e `ROLE_ADMIN`. Perciò
+`hasRole('ADMIN')` verifica `ROLE_ADMIN`, senza affidarsi a un ruolo nel JWT.
+
+Le regole HTTP di `SecurityConfig` rendono pubblici solo registrazione, login,
+refresh, health e i `GET` sotto `/prodotti/**` e `/aste/**`. `/admin/**`
+richiede `ADMIN`, `/me/**` richiede `USER`; `DELETE /me` richiede un utente
+autenticato. Gli altri percorsi richiedono almeno l'autenticazione. Una nuova
+operazione riservata sotto un percorso pubblico, anche se è un `GET`, deve avere
+una regola HTTP più specifica, posta prima della regola pubblica.
+
+`@EnableMethodSecurity` abilita `@PreAuthorize` sui metodi dei bean Spring.
+I nuovi servizi devono dichiarare esplicitamente le regole di ruolo o di
+proprietà della risorsa che servono: la sola abilitazione non assegna permessi
+ai metodi. Per esempio `hasRole('ADMIN')` richiede il ruolo ADMIN; nel servizio
+di eliminazione account il `sub` del token deve corrispondere all'ID passato al
+metodo. Qui `authentication` è un `JwtAuthenticationToken`, `principal` è il
+JWT, `authentication.name` è lo username e `authentication.token.subject` è
+l'ID utente.
+
 `POST /api/v1/auth/register` accetta `username`, `email` e `password`, crea un
 utente con ruolo `USER` e un portafoglio iniziale a zero. Restituisce `201` con
 `id`, `username`, `email` e `ruolo`; username o email già in uso restituiscono

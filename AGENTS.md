@@ -31,6 +31,9 @@
 - Il Producer abilita `@PreAuthorize` con `@EnableMethodSecurity`. Per le nuove
   operazioni protette, definisci il ruolo richiesto sia nel contratto REST sia
   sul metodo di servizio quando la regola riguarda l'operazione di dominio.
+- I `GET` sotto `/prodotti/**` e `/aste/**` sono pubblici. Prima di aggiungere
+  una lettura riservata in questi percorsi, inserisci una regola HTTP più
+  specifica che preceda quella pubblica.
 - Non registrare nei log password o token. Nel profilo `prod`, la chiave JWT
   arriva da `AUTH_JWT_SECRET`, mai dal codice o da un file `.env` committato.
 - Usa `BigDecimal` per importi e crediti. Le modifiche al saldo richiedono un
