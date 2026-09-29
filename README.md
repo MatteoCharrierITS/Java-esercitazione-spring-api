@@ -1,5 +1,19 @@
 # LiveAuction — Spring Boot Producer/Consumer
 
+## Divisione dei compiti
+
+Compilare la propria riga scegliendo una delle aree ancora disponibili.
+
+| Persona | Area scelta |
+| --- | --- |
+| MATTEO | Autenticazione e utenti |
+| MAIKOL | WebSocket e notifiche |
+| MONDIR | Da scegliere |
+| MATTEO | Da scegliere |
+| TOMMI | Da scegliere |
+| ANDREA | Da scegliere |
+| CRISTIAN | Prodotti e catalogo |
+
 Marketplace didattico nel quale un amministratore programma aste live di
 prodotti disponibili a catalogo e gli utenti partecipano usando crediti
 virtuali. Il vincitore riceve una unità del prodotto nel proprio inventario.
