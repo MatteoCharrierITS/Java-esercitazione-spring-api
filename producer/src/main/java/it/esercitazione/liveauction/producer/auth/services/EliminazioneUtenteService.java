@@ -2,6 +2,7 @@ package it.esercitazione.liveauction.producer.auth.services;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +16,7 @@ public class EliminazioneUtenteService {
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
+    @PreAuthorize("authentication.token.subject == #p0.toString()")
     public void elimina(long userId) {
         String anonymousId = UUID.randomUUID().toString();
         String passwordHash = passwordEncoder.encode(UUID.randomUUID().toString());

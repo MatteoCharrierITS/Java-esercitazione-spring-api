@@ -2,6 +2,7 @@ package it.esercitazione.liveauction.producer.auth;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import it.esercitazione.liveauction.producer.auth.services.EliminazioneUtenteService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,11 +11,17 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -29,6 +36,8 @@ class AuthFlowIntegrationTests {
     @Autowired ObjectMapper json;
     @Autowired JdbcTemplate jdbc;
     @Autowired PasswordEncoder passwordEncoder;
+    @Autowired JwtDecoder jwtDecoder;
+    @Autowired EliminazioneUtenteService eliminazioneUtenteService;
 
     @Test
     void registrationCreatesWalletAndLoginEnforcesRoles() throws Exception {
@@ -160,6 +169,17 @@ class AuthFlowIntegrationTests {
                         .contentType(MediaType.APPLICATION_JSON).content(loginRequest))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString());
+
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(new JwtAuthenticationToken(
+                jwtDecoder.decode(firstLogin.get("accessToken").asText())));
+        SecurityContextHolder.setContext(context);
+        try {
+            assertThatThrownBy(() -> eliminazioneUtenteService.elimina(userId + 1))
+                    .isInstanceOf(AccessDeniedException.class);
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
 
         mvc.perform(delete("/api/v1/me"))
                 .andExpect(status().isUnauthorized());
