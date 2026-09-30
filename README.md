@@ -32,7 +32,7 @@ crediti prima di accettare un'offerta.
 Creazione riservata all'ADMIN, prezzo iniziale, conversione `Europe/Rome` → UTC,
 apertura della stanza tre minuti prima e blocco atomico dello stock.
 
-### Offerte e chiusura - DA ASSEGNARE
+### Offerte e chiusura - TOMMI
 
 Validazione dei rilanci, incremento di venti secondi, concorrenza, selezione
 del vincitore e trasferimento di crediti e prodotto.
