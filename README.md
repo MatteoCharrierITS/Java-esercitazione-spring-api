@@ -22,12 +22,12 @@ utenti, riconnessione ed email inviata al vincitore dopo la chiusura.
 Categorie, prodotti, CRUD ADMIN, ricerca, paginazione, campo `astabile` e
 gestione delle quantità disponibili e bloccate.
 
-### Portafoglio e movimenti - DA ASSEGNARE
+### Portafoglio e movimenti - MONDIR
 
 Saldo totale, riservato e disponibile, ledger dei movimenti e controllo dei
 crediti prima di accettare un'offerta.
 
-### Programmazione delle aste - DA ASSEGNARE
+### Programmazione delle aste - MARCO
 
 Creazione riservata all'ADMIN, prezzo iniziale, conversione `Europe/Rome` → UTC,
 apertura della stanza tre minuti prima e blocco atomico dello stock.
