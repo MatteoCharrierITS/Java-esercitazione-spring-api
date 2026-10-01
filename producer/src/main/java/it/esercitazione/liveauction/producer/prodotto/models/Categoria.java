@@ -1,4 +1,4 @@
-package it.esercitazione.liveauction.producer.categoria.models;
+package it.esercitazione.liveauction.producer.prodotto.models;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -6,7 +6,8 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "categorie")
-@Getter @Setter
+@Getter
+@Setter
 public class Categoria {
 
     @Id

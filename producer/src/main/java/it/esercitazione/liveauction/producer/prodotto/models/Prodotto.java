@@ -1,6 +1,5 @@
 package it.esercitazione.liveauction.producer.prodotto.models;
 
-import it.esercitazione.liveauction.producer.categoria.models.Categoria;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
