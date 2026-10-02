@@ -60,8 +60,12 @@ Il sistema è composto da due applicazioni indipendenti:
 - **consumer** (`:8082`): interfaccia Thymeleaf che usa esclusivamente i
   contratti esposti dal Producer.
 
-> **Stato:** infrastruttura Spring Boot/Docker pronta; il dominio LiveAuction è
-> progettato nella documentazione ma non ancora implementato.
+> **Stato del branch corrente:** il Producer implementa autenticazione,
+> catalogo, programmazione ADMIN con blocco atomico dello stock, apertura
+> automatica della stanza e dell'asta, lobby e snapshot pubblici. Offerte,
+> chiusura, ticket/STOMP, annullamento e storici sono ancora da implementare.
+> La documentazione distingue i contratti previsti dalle API disponibili;
+> vedere [lo stato del modulo aste](docs/README.md#stato-del-modulo-aste).
 
 ## La feature distintiva: LiveAuction
 
@@ -219,7 +223,7 @@ questa chiave il Producer non si avvia.
 ## Build
 
 ```powershell
-.\producer\mvnw.cmd -f pom.xml test
+.\producer\mvnw.cmd -f producer/pom.xml test
 ```
 
 ## Avvio Docker
