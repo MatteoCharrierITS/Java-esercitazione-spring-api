@@ -242,6 +242,12 @@ Comando offerta:
 
 Evento pubblico accettato:
 
+`knownSequence` arretrata non impedisce un'offerta ancora valida sullo stato
+corrente; il risultato del servizio indica `snapshotRequired=true`.
+Una sequenza futura produce `SEQUENCE_NON_AGGIORNATA`. Il retry di un UUID già
+accettato non ripete riserve, estensioni o eventi; con dati diversi produce
+`CLIENT_BID_ID_GIA_UTILIZZATO`. Il collegamento STOMP è a cura del relativo modulo.
+
 ```json
 {
   "type": "BID_ACCEPTED",
@@ -283,6 +289,9 @@ Eventi pubblici principali: `ROOM_OPENED`, `AUCTION_STARTED`,
 | 409 | `ASTA_NON_APERTA` |
 | 409 | `PRODOTTO_NON_DISPONIBILE` |
 | 409 | `OFFERTA_SUPERATA` |
+| 409 | `RILANCIO_SU_SE_STESSO` |
+| 409 | `CLIENT_BID_ID_GIA_UTILIZZATO` |
+| 409 | `LIMITE_SALDO_SUPERATO` |
 | 409 | `SALDO_INSUFFICIENTE` |
 | 422 | `PRODOTTO_NON_ASTABILE` |
 | 422 | `DATA_INIZIO_NON_VALIDA` |
