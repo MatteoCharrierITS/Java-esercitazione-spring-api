@@ -145,6 +145,14 @@ Producer usando un ticket monouso e a breve scadenza.
 
 ## Contratti principali
 
+Swagger UI del Producer: [http://localhost:8081/swagger-ui.html](http://localhost:8081/swagger-ui.html).
+Il JSON OpenAPI è disponibile su `/v3/api-docs` e documenta gli endpoint implementati.
+Usare **Authorize** con un access token per le API protette.
+
+Probe pubbliche nel package `monitoring`: `GET /api/v1/health` verifica la liveness;
+`GET /api/v1/ready` verifica anche la disponibilità del database e la readiness
+applicativa. Rispondono `200` se disponibili, `503` altrimenti.
+
 Base REST: `http://localhost:8081/api/v1`
 
 | Metodo | Endpoint | Scopo |

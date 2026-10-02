@@ -14,6 +14,8 @@
 
 | Metodo | Endpoint | Accesso | Scopo |
 | --- | --- | --- | --- |
+| `GET` | `/health` | pubblico | liveness del servizio, senza controllo DB |
+| `GET` | `/ready` | pubblico | readiness applicativa e disponibilità DB |
 | `POST` | `/auth/register` | pubblico | registra utente e wallet |
 | `POST` | `/auth/login` | pubblico | apre una sessione e restituisce i token |
 | `POST` | `/auth/refresh` | pubblico | rinnova i token usando il refresh token |
@@ -34,6 +36,29 @@
 | `GET` | `/admin/aste/storico` | ADMIN | storico globale e vincitori |
 | `PUT` | `/admin/prodotti/{id}` | ADMIN | modifica prodotto, stock e flag |
 
+## Monitoring e Swagger
+
+Implementati nel Producer, nel package `monitoring`:
+
+- `GET /api/v1/health`: controlla il gruppo Actuator `liveness`, senza dipendenze esterne.
+- `GET /api/v1/ready`: controlla il gruppo `readiness`, che include `readinessState`
+  e `db`. Il controllo DB usa il health indicator JDBC di Actuator per verificare
+  una connessione e una query di validazione. Flyway e Hibernate validano lo schema
+  durante l'avvio; la readiness applicativa diventa positiva a completamento dell'avvio.
+
+Entrambi sono pubblici e restituiscono `200 application/json` con `{"status":"UP"}`
+quando il controllo passa. In caso contrario restituiscono `503 application/problem+json`,
+con `code` rispettivamente `SERVIZIO_NON_ATTIVO` o `SERVIZIO_NON_PRONTO` e
+`statusService` contenente lo stato aggregato (ad esempio `DOWN` o `OUT_OF_SERVICE`).
+Non espongono dettagli di connessione o eccezioni. Un guasto DB rende Ready negativo
+senza rendere negativo Health. Le probe Actuator esistenti restano disponibili.
+
+Swagger UI: `http://localhost:8081/swagger-ui.html`.
+OpenAPI JSON: `http://localhost:8081/v3/api-docs`.
+La documentazione è pubblica e include solo gli endpoint REST implementati sotto
+`/api/v1`. Usare **Authorize** con l'access token ottenuto dal login per provare
+le operazioni protette; i controlli di ruolo del Producer restano applicati.
+
 ## Autenticazione
 
 ### Regole di accesso nel Producer
@@ -45,7 +70,7 @@ rispettivamente le autorità Spring `ROLE_USER` e `ROLE_ADMIN`. Perciò
 `hasRole('ADMIN')` verifica `ROLE_ADMIN`, senza affidarsi a un ruolo nel JWT.
 
 Le regole HTTP di `SecurityConfig` rendono pubblici solo registrazione, login,
-refresh, health e i `GET` sotto `/prodotti/**` e `/aste/**`. `/admin/**`
+ refresh, health, ready, Swagger e i `GET` sotto `/prodotti/**` e `/aste/**`. `/admin/**`
 richiede `ADMIN`, `/me/**` richiede `USER`; `DELETE /me` richiede un utente
 autenticato. Gli altri percorsi richiedono almeno l'autenticazione. Una nuova
 operazione riservata sotto un percorso pubblico, anche se è un `GET`, deve avere

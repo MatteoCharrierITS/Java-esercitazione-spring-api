@@ -5,6 +5,7 @@ Importare `local.postman_environment.json` e selezionare l'ambiente
 
 | File | Modulo | Stato |
 | --- | --- | --- |
+| `monitoring.json` | Health e Ready | Implementato |
 | `auth.json` | Registrazione, login, refresh, logout ed eliminazione account | Implementato |
 | `prodotti.json` | Catalogo, acquisti, gestione ADMIN | API previste |
 | `inventario.json` | Inventario personale | API prevista |

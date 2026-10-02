@@ -1,0 +1,28 @@
+{
+  "info": {
+    "name": "LiveAuction • Monitoring",
+    "description": "Probe pubbliche del Producer. Health verifica la liveness; Ready verifica anche il database. 200 se UP, 503 application/problem+json altrimenti.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": { "type": "noauth" },
+  "item": [
+    {
+      "name": "01 • Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/health",
+        "description": "Liveness del servizio, indipendente dalla disponibilità del DB."
+      }
+    },
+    {
+      "name": "02 • Ready",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/ready",
+        "description": "Readiness applicativa e connessione DB. 503 se il servizio rifiuta traffico o il DB non è disponibile."
+      }
+    }
+  ]
+}
